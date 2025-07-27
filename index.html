@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Goodreads Reading Analyzer</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 Goodreads Reading Analyzer</h1>
+            <p>Upload your Goodreads export to discover insights about your reading habits</p>
+        </header>
+
+        <main>
+            <!-- File Upload Section -->
+            <section class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-content">
+                        <div class="upload-icon">📁</div>
+                        <h3>Upload Your Goodreads Data</h3>
+                        <p>Drag and drop your Goodreads export CSV file here, or click to browse</p>
+                        <input type="file" id="fileInput" accept=".csv" hidden>
+                        <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                            Choose File
+                        </button>
+                    </div>
+                </div>
+                <div class="file-info" id="fileInfo" style="display: none;">
+                    <span id="fileName"></span>
+                    <button class="remove-btn" onclick="removeFile()">Remove</button>
+                </div>
+            </section>
+
+            <!-- Analysis Results -->
+            <section class="results-section" id="resultsSection" style="display: none;">
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Analyzing your reading data...</p>
+                </div>
+
+                <div class="analysis-content" id="analysisContent" style="display: none;">
+                    <!-- Overview Stats -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h3>Total Books</h3>
+                            <div class="stat-value" id="totalBooks">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Average Rating</h3>
+                            <div class="stat-value" id="avgRating">0.0</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Favorite Genre</h3>
+                            <div class="stat-value" id="topGenre">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Reading Years</h3>
+                            <div class="stat-value" id="readingYears">0</div>
+                        </div>
+                    </div>
+
+                    <!-- Charts -->
+                    <div class="charts-grid">
+                        <div class="chart-container">
+                            <h3>Reading Over Time</h3>
+                            <canvas id="readingTimeline"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <h3>Genre Distribution</h3>
+                            <canvas id="genreChart"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <h3>Rating Distribution</h3>
+                            <canvas id="ratingChart"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <h3>Author Analysis</h3>
+                            <canvas id="authorChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Insights -->
+                    <div class="insights-section">
+                        <h2>📊 Your Reading Insights</h2>
+                        <div class="insights-grid" id="insightsGrid">
+                            <!-- Insights will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Recommendations -->
+                    <div class="recommendations-section">
+                        <h2>🎯 Personalized Recommendations</h2>
+                        <div class="recommendations-grid" id="recommendationsGrid">
+                            <!-- Recommendations will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 
