@@ -86,13 +86,28 @@ def main():
     # Custom CSS for navigation styling
     st.markdown("""
     <style>
-    .active-nav {
-        background-color: #ff4b4b;
-        color: white;
+    .nav-button {
+        width: 100%;
         padding: 8px 12px;
         border-radius: 6px;
         margin: 4px 0;
+        text-align: left;
+        border: 1px solid #e0e0e0;
+        background-color: #f8f9fa;
+        color: #333;
+        font-weight: normal;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .nav-button:hover {
+        background-color: #e9ecef;
+        border-color: #d0d0d0;
+    }
+    .nav-button.active {
+        background-color: #ff4b4b;
+        color: white;
         font-weight: bold;
+        border-color: #ff4b4b;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -110,16 +125,16 @@ def main():
     else:
         current_page = main_pages[0]
     
-    # Create navigation buttons with different styling for active state
+    # Create navigation buttons with consistent styling
     for i, page_name in enumerate(main_pages):
         is_active = page_name == current_page
         
         if is_active:
-            # Active page - bold text with background highlighting
-            st.sidebar.markdown(f'<div class="active-nav">{page_name}</div>', unsafe_allow_html=True)
+            # Active page - styled div
+            st.sidebar.markdown(f'<div class="nav-button active">{page_name}</div>', unsafe_allow_html=True)
         else:
-            # Inactive page - clickable button
-            if st.sidebar.button(page_name, key=f"nav_{i}"):
+            # Inactive page - clickable button with same styling
+            if st.sidebar.button(page_name, key=f"nav_{i}", help=f"Go to {page_name}"):
                 st.session_state.selected_page = page_name
                 st.rerun()
     
@@ -739,7 +754,7 @@ def show_comprehensive_analysis_page_parallel():
             "😂  ROAST ME  😂", 
             "👤  PERSONAL PROFILE  👤", 
             "📚  RECOMMENDATIONS  📚", 
-            "��  LITERARY INSIGHTS  📖"
+            "📖  LITERARY INSIGHTS  📖"
         ])
         
         with tab1:
