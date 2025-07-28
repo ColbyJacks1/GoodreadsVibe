@@ -1,4 +1,4 @@
-# 📚 Book Mirror Plus
+# 📚 Goodreads Analyzer
 
 A local Streamlit + FastAPI application that provides **deep, non-deterministic literary psychology insights** from your Goodreads reading data. Discover what your reading patterns reveal about your personality, intellectual preferences, and emotional landscape.
 
@@ -6,14 +6,13 @@ A local Streamlit + FastAPI application that provides **deep, non-deterministic 
 
 ### 🔍 **Deep Literary Psychology Insights**
 - **Non-deterministic analysis**: Each insight generation produces unique, surprising interpretations
-- **Five psychological dimensions**: Personality type, intellectual profile, emotional preferences, dominant themes, and literary portrait
+- **Multiple analysis types**: Comprehensive analysis, profile insights, and targeted insights
 - **Google Gemini-powered**: Advanced LLM analysis of your reading patterns
 - **Cluster-based insights**: Uses book clustering to identify reading personality archetypes
 
 ### 📊 **Comprehensive Data Processing**
 - **Goodreads CSV ingestion**: Import your complete reading history
 - **Open Library enrichment**: Automatically adds descriptions, subjects, and genres
-
 - **K-means clustering**: Auto-selects optimal number of clusters (3-12)
 - **UMAP visualization**: 2D projection of your reading universe
 
@@ -34,9 +33,8 @@ A local Streamlit + FastAPI application that provides **deep, non-deterministic 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Python 3.11+
+- Python 3.13+
 - Poetry (for dependency management)
-- OpenAI API key
 - Google Gemini API key
 
 ### Installation
@@ -44,12 +42,12 @@ A local Streamlit + FastAPI application that provides **deep, non-deterministic 
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd book-mirror-plus
+   cd goodreads-analyzer
    ```
 
 2. **Install dependencies**
    ```bash
-   poetry install
+   make install
    ```
 
 3. **Set up environment variables**
@@ -58,17 +56,12 @@ A local Streamlit + FastAPI application that provides **deep, non-deterministic 
    # Edit .env with your API keys
    ```
 
-4. **Start the FastAPI backend**
+4. **Start the application**
    ```bash
-   poetry run dev
+   make start
    ```
 
-5. **Start the Streamlit UI** (in another terminal)
-   ```bash
-   poetry run streamlit
-   ```
-
-6. **Open your browser**
+5. **Open your browser**
    - FastAPI docs: http://localhost:8000/docs
    - Streamlit UI: http://localhost:8501
 
@@ -83,14 +76,18 @@ A local Streamlit + FastAPI application that provides **deep, non-deterministic 
 1. **Upload CSV**: Use the Streamlit interface to upload your Goodreads CSV
 2. **Ingest Data**: Click "Ingest Data" to parse and store your books
 3. **Enrich Metadata**: Click "Enrich Metadata" to add Open Library data
-4. **Generate Insights**: Click "Generate Insights" for deep literary psychology analysis
+4. **Generate Insights**: Choose from multiple analysis types:
+   - **Comprehensive Analysis**: Deep literary psychology insights
+   - **Profile Analysis**: Reading personality profile
+   - **Insights**: Targeted psychological analysis
 5. **Get Recommendations**: Use the AI-powered recommendation system
 
 ### Step 3: Explore Insights
 1. **Dashboard**: View reading statistics and visualizations
-2. **Insights**: Generate deep literary psychology insights
-3. **Recommendations**: Get AI-powered personalized book suggestions
-4. **Reading Preferences**: Analyze your literary tastes and patterns
+2. **Comprehensive Analysis**: Generate deep literary psychology insights
+3. **Profile Analysis**: Analyze your reading personality
+4. **Insights**: Get targeted psychological analysis
+5. **Recommendations**: Get AI-powered personalized book suggestions
 
 ## 🧠 Deep Insights Examples
 
@@ -110,6 +107,7 @@ The system generates insights like:
 ### Backend (FastAPI)
 - **Database**: SQLite with SQLModel ORM
 - **LLM**: Google Gemini for insights generation
+- **Clustering**: K-means with UMAP dimensionality reduction
 
 ### Frontend (Streamlit)
 - **Interactive visualizations**: Plotly charts
@@ -119,7 +117,7 @@ The system generates insights like:
 
 ### Data Flow
 ```
-Goodreads CSV → Ingestion → Enrichment → Insights
+Goodreads CSV → Ingestion → Enrichment → Clustering → Insights
 ```
 
 ## 📊 API Endpoints
@@ -127,36 +125,42 @@ Goodreads CSV → Ingestion → Enrichment → Insights
 ### Core Processing
 - `POST /upload` - Upload and ingest Goodreads CSV
 - `POST /enrich` - Enrich books with Open Library metadata
-
 - `POST /cluster` - Perform K-means clustering
 
-### Insights & Recommendations
-- `GET /insights` - Generate literary psychology insights
+### Analysis & Insights
+- `POST /comprehensive-analysis` - Generate comprehensive literary psychology insights
+- `POST /profile-insights` - Generate reading personality profile
+- `POST /insights` - Generate targeted psychological insights
 - `GET /recommend?q=<query>` - Get personalized recommendations
 - `GET /books/{book_id}/similar` - Find similar books
 
 ### Statistics
 - `GET /stats/ingestion` - Ingestion statistics
 - `GET /stats/enrichment` - Enrichment statistics
+- `GET /stats/clustering` - Clustering statistics
 - `GET /stats/insights` - Insights generation statistics
+- `GET /stats/profile-insights` - Profile insights statistics
+- `GET /stats/comprehensive-analysis` - Comprehensive analysis statistics
+- `GET /stats/recommendations` - Recommendation statistics
 
 ### Data Access
 - `GET /books` - Get all books
 - `GET /books/cluster/{cluster_id}` - Get books by cluster
 - `GET /clusters/exemplars` - Get cluster exemplars
+- `GET /recommendations/preferences` - Analyze reading preferences
 
 ## 🧪 Testing
 
 Run the test suite:
 ```bash
-poetry run test
+make test
 ```
 
 Individual test modules:
 ```bash
-poetry run pytest tests/test_ingest.py
-poetry run pytest tests/test_cluster.py
-poetry run pytest tests/test_insights.py
+make test-ingest
+make test-cluster
+make test-insights
 ```
 
 ## 🔧 Development
@@ -164,22 +168,33 @@ poetry run pytest tests/test_insights.py
 ### Code Quality
 ```bash
 # Format code
-poetry run black .
+make format
 
 # Lint code
-poetry run ruff .
+make lint
 
-# Type checking
-poetry run mypy .
+# Run all quality checks
+make all
+```
 
-# Pre-commit hooks
-poetry run pre-commit install
+### Development Workflow
+```bash
+# Full development workflow
+make workflow
+
+# Start development server
+make dev
+
+# Start Streamlit UI
+make streamlit
+
+# Start both backend and frontend
+make start
 ```
 
 ### Environment Variables
 ```bash
 # Required
-OPENAI_API_KEY=your_openai_api_key
 GOOGLE_GEMINI_API_KEY=your_gemini_api_key
 
 # Optional
@@ -196,7 +211,6 @@ LOG_LEVEL=INFO
 
 ### Benchmarks
 - **CSV Processing**: ~50 books/second
-
 - **Clustering**: ~100 books/second
 - **Insights Generation**: ~2-3 seconds for 100 books
 
@@ -230,7 +244,7 @@ The system is designed to provide **surprising but plausible** insights by:
 2. Create a feature branch
 3. Make your changes
 4. Add tests for new functionality
-5. Run the test suite
+5. Run the test suite: `make test`
 6. Submit a pull request
 
 ## 📄 License
@@ -241,7 +255,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - **Goodreads**: For providing the data export functionality
 - **Open Library**: For rich book metadata
-
 - **Google Gemini**: For advanced language model capabilities
 - **Streamlit**: For the beautiful UI framework
 - **FastAPI**: For the robust API framework
@@ -250,4 +263,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 **Happy Reading! 📚✨**
 
-*Discover what your books reveal about you with Book Mirror Plus.* 
+*Discover what your books reveal about you with Goodreads Analyzer.* 
