@@ -121,23 +121,22 @@ def show_upload_page():
     # Custom CSS to make the import button taller
     st.markdown("""
     <style>
-    /* Universal button styling with high specificity */
-    button {
+    /* Target the specific import button by its text content */
+    .stButton > button:contains("Import & Process Data") {
         font-size: 18px !important;
         font-weight: bold !important;
-    }
-    
-    /* Streamlit button specific styling */
-    .stButton > button {
         height: 60px !important;
-        font-size: 18px !important;
-        font-weight: bold !important;
     }
     
-    /* Target all buttons in the app */
-    div[data-testid="stButton"] button,
-    .stButton button,
-    button[data-baseweb="button"] {
+    /* Alternative approach - target by button attributes */
+    .stButton > button[data-baseweb="button"] {
+        font-size: 18px !important;
+        font-weight: bold !important;
+        height: 60px !important;
+    }
+    
+    /* Force all text in buttons to be larger */
+    .stButton > button * {
         font-size: 18px !important;
         font-weight: bold !important;
     }
