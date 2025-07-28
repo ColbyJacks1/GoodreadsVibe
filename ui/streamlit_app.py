@@ -19,6 +19,14 @@ sys.path.insert(0, str(project_root))
 from app.session_db import session_db_manager
 from app.ingest import GenreNormalizer
 
+# Import comprehensive analyzer with error handling for Streamlit Cloud
+try:
+    from app.comprehensive_analysis import comprehensive_analyzer
+    print("✅ Successfully imported comprehensive_analyzer")
+except ImportError as e:
+    print(f"❌ Failed to import comprehensive_analyzer: {e}")
+    comprehensive_analyzer = None
+
 
 def sqlmodel_to_dict(obj):
     """Convert SQLModel object to dictionary to avoid Pydantic compatibility issues."""
@@ -836,7 +844,16 @@ def show_comprehensive_analysis_page_parallel():
                 # Start with quick analysis first (faster)
                 with st.spinner("Generating quick analysis (roast + recommendations)..."):
                     try:
-                        from app.comprehensive_analysis import comprehensive_analyzer
+                        # Debug: Check if comprehensive_analyzer is available
+                        if comprehensive_analyzer is None:
+                            st.error("❌ Comprehensive analyzer not available. Import failed.")
+                            st.stop()
+                            
+                        # Debug: Check if method exists
+                        if not hasattr(comprehensive_analyzer, 'generate_quick_analysis'):
+                            st.error(f"Method 'generate_quick_analysis' not found. Available methods: {[method for method in dir(comprehensive_analyzer) if not method.startswith('_')]}")
+                            st.stop()
+                        
                         quick_result = comprehensive_analyzer.generate_quick_analysis()
                         st.write(f"Debug - Quick analysis result success: {quick_result.get('success', False)}")
                         st.write(f"Debug - Quick analysis sections: {list(quick_result.get('parsed_sections', {}).keys())}")
@@ -919,7 +936,11 @@ def show_comprehensive_analysis_page_parallel():
                     st.session_state.comprehensive_analysis_started = True
                     # Run comprehensive analysis in background without blocking UI
                     try:
-                        from app.comprehensive_analysis import comprehensive_analyzer
+                        # Debug: Check if comprehensive_analyzer is available
+                        if comprehensive_analyzer is None:
+                            st.error("❌ Comprehensive analyzer not available for parallel analysis. Import failed.")
+                            st.stop()
+                            
                         comprehensive_result = comprehensive_analyzer.generate_comprehensive_analysis_parallel()
                         if comprehensive_result.get("success"):
                             st.session_state.comprehensive_analysis_sections_parallel = comprehensive_result.get("parsed_sections", {})
