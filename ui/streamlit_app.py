@@ -224,18 +224,26 @@ def show_upload_page():
                     enriched_count = 0
                     genre_normalizer = GenreNormalizer()
                     
+                    debug_count = 0
                     for book in user_books:
-                        # Simulate enrichment with additional metadata
+                        # Always process genres from bookshelves
+                        if book.get('bookshelves'):
+                            bookshelves_raw = book['bookshelves']
+                            normalized_genres = genre_normalizer.normalize_bookshelves(bookshelves_raw)
+                            book['genres'] = ", ".join(normalized_genres) if normalized_genres else "Unknown"
+                            
+                            # Debug: Show first few examples
+                            if debug_count < 3:
+                                st.write(f"📖 **{book['title']}**")
+                                st.write(f"   - Raw bookshelves: `{bookshelves_raw}`")
+                                st.write(f"   - Normalized genres: `{normalized_genres}`")
+                                debug_count += 1
+                        else:
+                            book['genres'] = "Unknown"
+                        
+                        # Simulate other enrichment with additional metadata
                         if not book.get('description'):
                             book['description'] = f"Enriched description for {book['title']}"
-                            
-                            # Normalize genres from bookshelves
-                            if book.get('bookshelves'):
-                                normalized_genres = genre_normalizer.normalize_bookshelves(book['bookshelves'])
-                                book['genres'] = ", ".join(normalized_genres) if normalized_genres else "Unknown"
-                            else:
-                                book['genres'] = "Unknown"
-                            
                             book['language'] = "English"  # Placeholder
                             book['format'] = "Paperback"  # Placeholder
                             enriched_count += 1
