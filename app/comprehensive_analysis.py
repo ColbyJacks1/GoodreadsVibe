@@ -203,7 +203,7 @@ class ComprehensiveAnalyzer:
     
     def get_analysis_stats(self) -> Dict[str, Any]:
         """Get statistics about the comprehensive analysis capability."""
-        books = self.db.get_all_books()
+        books = self.db.get_user_books()
         
         if not books:
             return {
