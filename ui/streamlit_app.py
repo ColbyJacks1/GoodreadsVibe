@@ -869,7 +869,7 @@ def show_comprehensive_analysis_page_parallel():
         
         elif analysis_status == "quick_completed":
             # Show quick analysis results immediately
-            st.success("✅ Quick analysis completed! Comprehensive analysis in progress...")
+            st.success("✅ Quick analysis completed! Roast and Recommendations are ready! Profile and Insights in progress...")
             st.info("⏱️ **AI processing may take up to 2 minutes** - please be patient!")
             
             # Show all 4 tabs with quick results in first 2, processing in last 2
