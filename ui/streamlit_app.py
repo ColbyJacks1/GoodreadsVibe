@@ -17,6 +17,7 @@ sys.path.insert(0, str(project_root))
 
 # Import backend modules directly
 from app.session_db import session_db_manager
+from app.ingest import GenreNormalizer
 
 
 def sqlmodel_to_dict(obj):
@@ -24,6 +25,34 @@ def sqlmodel_to_dict(obj):
     if hasattr(obj, '__dict__'):
         return {k: v for k, v in obj.__dict__.items() if not k.startswith('_')}
     return obj
+
+
+def show_quick_navigation():
+    """Show quick navigation buttons at bottom of page."""
+    st.markdown("---")
+    st.markdown("### 🚀 Quick Navigation")
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        if st.button("📤 Upload & Process", 
+                    use_container_width=True, 
+                    help="Upload your Goodreads CSV file"):
+            st.session_state.selected_page = "📤 Upload & Process"
+            st.rerun()
+    
+    with col2:
+        if st.button("📊 Dashboard", 
+                    use_container_width=True, 
+                    help="View your reading statistics"):
+            st.session_state.selected_page = "📊 Dashboard"
+            st.rerun()
+    
+    with col3:
+        if st.button("🔮 Comprehensive Analysis", 
+                    use_container_width=True, 
+                    help="Get AI-powered insights"):
+            st.session_state.selected_page = "🔮 Comprehensive Analysis"
+            st.rerun()
 
 
 # Configure page
@@ -38,6 +67,8 @@ def main():
     st.title("📚 Goodreads Analyzer")
     st.markdown("Deep literary psychology insights from your Goodreads data")
     
+
+    
     # Initialize session state for user data
     if 'user_books' not in st.session_state:
         st.session_state.user_books = []
@@ -50,24 +81,48 @@ def main():
             'average_rating': 0.0
         }
     
-    # Sidebar
-    st.sidebar.title("Navigation")
+    # Clean Sidebar Navigation
+    st.sidebar.title("📚 Navigation")
+    
+    # Simple list of all pages
+    all_pages = [
+        "📤 Upload & Process", 
+        "📊 Dashboard", 
+        "🔮 Comprehensive Analysis", 
+        "🧠 Insights", 
+        "👤 Profile Analysis", 
+        "📚 Recommendations"
+    ]
+    
+    # Check if page was selected via main buttons
+    if 'selected_page' in st.session_state and st.session_state.selected_page in all_pages:
+        default_index = all_pages.index(st.session_state.selected_page)
+    else:
+        default_index = 0
+    
     page = st.sidebar.selectbox(
-        "Choose a page",
-        ["Upload & Process", "Dashboard", "Comprehensive Analysis", "Insights", "Profile Analysis", "Recommendations"]
+        "Choose a section:",
+        all_pages,
+        index=default_index
     )
     
-    if page == "Upload & Process":
+    # Update session state
+    st.session_state.selected_page = page
+    
+    # Clean up page names for routing
+    page_clean = page.split(" ", 1)[1] if " " in page else page
+    
+    if page_clean == "Upload & Process":
         show_upload_page()
-    elif page == "Dashboard":
+    elif page_clean == "Dashboard":
         show_dashboard_page()
-    elif page == "Comprehensive Analysis":
+    elif page_clean == "Comprehensive Analysis":
         show_comprehensive_analysis_page()
-    elif page == "Insights":
+    elif page_clean == "Insights":
         show_insights_page()
-    elif page == "Profile Analysis":
+    elif page_clean == "Profile Analysis":
         show_profile_analysis_page()
-    elif page == "Recommendations":
+    elif page_clean == "Recommendations":
         show_recommendations_page()
 
 def show_upload_page():
@@ -127,22 +182,33 @@ def show_upload_page():
                     
                     for index, row in df.iterrows():
                         try:
-                            # Create book data
+                            # Helper function to safely convert to string or None
+                            def safe_str_or_none(value):
+                                if pd.isna(value) or value is None:
+                                    return None
+                                return str(value)
+                            
+                            def safe_str(value, default=''):
+                                if pd.isna(value) or value is None:
+                                    return default
+                                return str(value)
+                            
+                            # Create book data with safe string conversion
                             book_data = {
-                                'book_id': str(row.get('Book Id', f'book_{index}')),
-                                'title': str(row.get('Title', 'Unknown Title')),
-                                'author': str(row.get('Author', 'Unknown Author')),
+                                'book_id': safe_str(row.get('Book Id'), f'book_{index}'),
+                                'title': safe_str(row.get('Title'), 'Unknown Title'),
+                                'author': safe_str(row.get('Author'), 'Unknown Author'),
                                 'my_rating': int(row.get('My Rating', 0)) if pd.notna(row.get('My Rating')) else None,
                                 'average_rating': float(row.get('Average Rating', 0)) if pd.notna(row.get('Average Rating')) else None,
-                                'date_read': row.get('Date Read', None),
-                                'date_added': row.get('Date Added', None),
-                                'bookshelves': row.get('Bookshelves', None),
-                                'my_review': row.get('My Review', None),
-                                'publisher': row.get('Publisher', None),
+                                'date_read': safe_str_or_none(row.get('Date Read')),
+                                'date_added': safe_str_or_none(row.get('Date Added')),
+                                'bookshelves': safe_str_or_none(row.get('Bookshelves')),
+                                'my_review': safe_str_or_none(row.get('My Review')),
+                                'publisher': safe_str_or_none(row.get('Publisher')),
                                 'pages': int(row.get('Number of Pages', 0)) if pd.notna(row.get('Number of Pages')) else None,
                                 'year_published': int(row.get('Original Publication Year', 0)) if pd.notna(row.get('Original Publication Year')) else None,
-                                'isbn': row.get('ISBN', None),
-                                'isbn13': row.get('ISBN13', None)
+                                'isbn': safe_str_or_none(row.get('ISBN')),
+                                'isbn13': safe_str_or_none(row.get('ISBN13'))
                             }
                             
                             # Add to session
@@ -156,12 +222,20 @@ def show_upload_page():
                     # Step 2: Enrich metadata
                     user_books = session_db_manager.get_user_books()
                     enriched_count = 0
+                    genre_normalizer = GenreNormalizer()
                     
                     for book in user_books:
                         # Simulate enrichment with additional metadata
                         if not book.get('description'):
                             book['description'] = f"Enriched description for {book['title']}"
-                            book['genres'] = "Fiction, Literature"  # Placeholder
+                            
+                            # Normalize genres from bookshelves
+                            if book.get('bookshelves'):
+                                normalized_genres = genre_normalizer.normalize_bookshelves(book['bookshelves'])
+                                book['genres'] = ", ".join(normalized_genres) if normalized_genres else "Unknown"
+                            else:
+                                book['genres'] = "Unknown"
+                            
                             book['language'] = "English"  # Placeholder
                             book['format'] = "Paperback"  # Placeholder
                             enriched_count += 1
@@ -193,11 +267,26 @@ def show_upload_page():
                     if skipped_books > 0:
                         st.warning(f"⚠️ Skipped {skipped_books} books due to formatting issues")
                     
+                    # Start background comprehensive analysis if sufficient data
+                    if len(user_books) >= 5 and books_with_ratings >= 3:
+                        st.info("🔮 Starting comprehensive analysis in background...")
+                        st.session_state.analysis_status = "processing"
+                        st.session_state.analysis_start_time = datetime.now()
+                        # Clear any existing analysis
+                        st.session_state.pop('comprehensive_analysis_result', None)
+                        st.session_state.pop('comprehensive_analysis_sections', None)
+                        
+                        # Note: Actual processing will happen when user navigates to the page
+                        # due to Streamlit's architecture
+                    
                 except Exception as e:
                     st.error(f"❌ Error processing data: {str(e)}")
                 finally:
                     # Clean up temp file
                     os.unlink(tmp_file_path)
+    
+    # Quick navigation at bottom
+    show_quick_navigation()
 
 def show_dashboard_page():
     st.header("📊 Dashboard")
@@ -261,7 +350,8 @@ def show_dashboard_page():
         # Ratings heatmap
         st.subheader("⭐ Ratings Heatmap")
         if 'my_rating' in books_df.columns:
-            ratings_df = books_df[books_df['my_rating'].notna()]
+            # Filter out 0 star ratings
+            ratings_df = books_df[(books_df['my_rating'].notna()) & (books_df['my_rating'] > 0)]
             if not ratings_df.empty:
                 # Create rating distribution
                 rating_counts = ratings_df['my_rating'].value_counts().sort_index()
@@ -297,6 +387,9 @@ def show_dashboard_page():
                     st.plotly_chart(fig, use_container_width=True)
     else:
         st.info("📚 No books uploaded yet. Go to 'Upload & Process' to add your Goodreads data!")
+    
+    # Quick navigation at bottom
+    show_quick_navigation()
 
 
 
@@ -350,6 +443,9 @@ def show_insights_page():
     else:
         st.warning(f"⚠️ Insufficient data for insights")
         st.info("You need at least 5 books with 3 rated books to generate insights.")
+    
+    # Quick navigation at bottom
+    show_quick_navigation()
 
 
 def generate_simple_insights(user_books, user_stats):
@@ -510,6 +606,9 @@ def show_profile_analysis_page():
     else:
         st.warning("⚠️ Insufficient data for profile analysis")
         st.info("You need at least 10 books with 5 rated books to generate a profile analysis.")
+    
+    # Quick navigation at bottom
+    show_quick_navigation()
 
 
 def show_comprehensive_analysis_page():
@@ -523,37 +622,101 @@ def show_comprehensive_analysis_page():
     total_books = user_stats.get('total_books', 0)
     books_with_ratings = user_stats.get('books_with_ratings', 0)
     
-    col1, col2 = st.columns(2)
-    with col1:
-        st.metric("Total Books", total_books)
-    with col2:
-        st.metric("Books with Ratings", books_with_ratings)
-    
     can_generate = total_books >= 5 and books_with_ratings >= 3
     
     if can_generate:
-        # Add Clear Analysis button
-        if 'comprehensive_analysis_result' in st.session_state or 'comprehensive_analysis_sections' in st.session_state:
-            if st.button("🧹 Clear Analysis"):
-                st.session_state.pop('comprehensive_analysis_result', None)
-                st.session_state.pop('comprehensive_analysis_sections', None)
-                st.rerun()
+        # Check analysis status
+        analysis_status = st.session_state.get('analysis_status', 'not_started')
         
-        # Show stored analysis if present
-        if 'comprehensive_analysis_result' in st.session_state or 'comprehensive_analysis_sections' in st.session_state:
-            st.success("✨ Comprehensive analysis completed successfully!")
+        if analysis_status == "processing":
+            # Show processing state
+            st.info("🔄 **Processing your comprehensive analysis...**")
             
-            # Create tabs for different sections
+            # Show progress and estimated time
+            if 'analysis_start_time' in st.session_state:
+                import time
+                elapsed = datetime.now() - st.session_state.analysis_start_time
+                elapsed_seconds = int(elapsed.total_seconds())
+                st.write(f"⏱️ Processing time: {elapsed_seconds} seconds")
+            
+            st.write("📚 Analyzing your reading patterns...")
+            st.write("🧠 Generating psychological insights...")
+            st.write("💡 Creating personalized recommendations...")
+            st.write("😂 Preparing your literary roast...")
+            
+            # Trigger actual processing
+            if 'analysis_processing_started' not in st.session_state:
+                st.session_state.analysis_processing_started = True
+                with st.spinner("Generating analysis..."):
+                    try:
+                        from app.comprehensive_analysis import comprehensive_analyzer
+                        result = comprehensive_analyzer.generate_comprehensive_analysis()
+                        if result.get('success'):
+                            st.session_state.comprehensive_analysis_result = result['comprehensive_analysis']
+                            st.session_state.comprehensive_analysis_sections = result['parsed_sections']
+                            st.session_state.analysis_status = "completed"
+                        else:
+                            st.session_state.analysis_status = "error"
+                            st.session_state.analysis_error = result.get('error', 'Unknown error')
+                    except Exception as e:
+                        st.session_state.analysis_status = "error"
+                        st.session_state.analysis_error = str(e)
+                    finally:
+                        st.session_state.pop('analysis_processing_started', None)
+                st.rerun()
+            
+            # Auto-refresh every 3 seconds to check if complete
+            import time
+            # Check if we should auto-refresh (every 3 seconds)
+            current_time = time.time()
+            if 'last_refresh' not in st.session_state:
+                st.session_state.last_refresh = current_time
+            
+            if current_time - st.session_state.last_refresh > 3:
+                st.session_state.last_refresh = current_time
+                st.rerun()
+            else:
+                # Show refresh button as alternative
+                if st.button("🔄 Check Status"):
+                    st.rerun()
+            
+        elif analysis_status == "completed":
+            # Show completed analysis
             if 'comprehensive_analysis_sections' in st.session_state:
                 sections = st.session_state['comprehensive_analysis_sections']
                 
-                tab1, tab2, tab3 = st.tabs(["📖 Literary Insights", "👤 Personal Profile", "📚 Recommendations"])
+                # Add custom CSS for larger tab fonts
+                st.markdown("""
+                <style>
+                .stTabs [data-baseweb="tab-list"] {
+                    gap: 8px;
+                }
+                .stTabs [data-baseweb="tab"] {
+                    height: 60px;
+                    padding-left: 20px;
+                    padding-right: 20px;
+                    font-size: 24px !important;
+                    font-weight: bold !important;
+                }
+                .stTabs [aria-selected="true"] {
+                    background-color: #ff4b4b;
+                    color: white !important;
+                }
+                </style>
+                """, unsafe_allow_html=True)
+                
+                tab1, tab2, tab3, tab4 = st.tabs([
+                    "😂  ROAST ME  😂", 
+                    "👤  PERSONAL PROFILE  👤", 
+                    "📚  RECOMMENDATIONS  📚", 
+                    "📖  LITERARY INSIGHTS  📖"
+                ])
                 
                 with tab1:
-                    if sections.get('insights'):
-                        st.markdown(sections['insights'])
+                    if sections.get('humorous'):
+                        st.markdown(sections['humorous'])
                     else:
-                        st.warning("No insights available.")
+                        st.warning("No humorous analysis available.")
                 
                 with tab2:
                     if sections.get('profile'):
@@ -566,75 +729,54 @@ def show_comprehensive_analysis_page():
                         st.markdown(sections['recommendations'])
                     else:
                         st.warning("No recommendations available.")
+                
+                with tab4:
+                    if sections.get('insights'):
+                        st.markdown(sections['insights'])
+                    else:
+                        st.warning("No insights available.")
         
-        # Generate Comprehensive Analysis button
-        if st.button("🔮 Generate Comprehensive Analysis"):
-            with st.spinner("Generating comprehensive analysis (this may take a moment)..."):
-                try:
-                    # Create comprehensive analysis using session data
-                    analysis = generate_comprehensive_analysis(user_books, user_stats)
-                    st.session_state['comprehensive_analysis_result'] = analysis
-                    st.session_state['comprehensive_analysis_sections'] = {
-                        'insights': analysis,
-                        'profile': "Profile analysis would go here...",
-                        'recommendations': "Recommendations would go here..."
-                    }
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Failed to generate analysis: {str(e)}")
+        elif analysis_status == "error":
+            # Show error state
+            st.error("❌ **Analysis failed**")
+            error_msg = st.session_state.get('analysis_error', 'Unknown error')
+            st.write(f"Error: {error_msg}")
+            
+            # Allow retry
+            if st.button("🔄 Retry Analysis"):
+                st.session_state.analysis_status = "processing"
+                st.session_state.analysis_start_time = datetime.now()
+                st.session_state.pop('analysis_processing_started', None)
+                st.session_state.pop('last_refresh', None)
+                st.rerun()
+        
+        else:
+            # Show generate button for manual trigger
+            if st.button("🔮 Generate Comprehensive Analysis"):
+                st.session_state.analysis_status = "processing"
+                st.session_state.analysis_start_time = datetime.now()
+                st.session_state.pop('analysis_processing_started', None)
+                st.session_state.pop('last_refresh', None)
+                st.rerun()
+        
+        # Clear Analysis button at bottom (only show if analysis exists)
+        if analysis_status == "completed" and 'comprehensive_analysis_sections' in st.session_state:
+            st.markdown("---")
+            if st.button("🧹 Clear Analysis", use_container_width=True):
+                st.session_state.pop('comprehensive_analysis_result', None)
+                st.session_state.pop('comprehensive_analysis_sections', None)
+                st.session_state.analysis_status = "not_started"
+                st.session_state.pop('analysis_start_time', None)
+                st.session_state.pop('analysis_processing_started', None)
+                st.session_state.pop('last_refresh', None)
+                st.rerun()
     else:
         st.warning(f"⚠️ Insufficient data for analysis")
         st.info("You need at least 5 books with 3 rated books to generate comprehensive analysis.")
+    
+    # Quick navigation at bottom
+    show_quick_navigation()
 
-
-def generate_comprehensive_analysis(user_books, user_stats):
-    """Generate comprehensive analysis based on user data."""
-    total_books = user_stats.get('total_books', 0)
-    books_with_ratings = user_stats.get('books_with_ratings', 0)
-    avg_rating = user_stats.get('average_rating', 0)
-    
-    analysis = []
-    
-    # Overall reading profile
-    analysis.append("## 📚 Your Reading Profile")
-    analysis.append(f"You have read **{total_books} books** with an average rating of **{avg_rating:.1f} stars**.")
-    
-    # Reading personality
-    if total_books > 50:
-        analysis.append("**🎯 Reading Personality**: You are an avid reader with a deep commitment to literature and intellectual exploration.")
-    elif total_books > 20:
-        analysis.append("**🎯 Reading Personality**: You are a regular reader who values personal growth through thoughtful reading.")
-    else:
-        analysis.append("**🎯 Reading Personality**: You are an emerging reader with curiosity and openness to new ideas.")
-    
-    # Rating psychology
-    if avg_rating >= 4.0:
-        analysis.append("**⭐ Rating Psychology**: Your high ratings suggest you're selective and know what resonates with you.")
-    elif avg_rating >= 3.0:
-        analysis.append("**⭐ Rating Psychology**: Your moderate ratings show a balanced and thoughtful approach to evaluation.")
-    else:
-        analysis.append("**⭐ Rating Psychology**: Your lower ratings indicate high standards and critical thinking.")
-    
-    # Genre analysis
-    if user_books:
-        genres = []
-        for book in user_books:
-            if book.get('bookshelves'):
-                book_genres = [g.strip() for g in book['bookshelves'].split(',')]
-                genres.extend(book_genres)
-        
-        if genres:
-            genre_counts = {}
-            for genre in genres:
-                genre_counts[genre] = genre_counts.get(genre, 0) + 1
-            
-            top_genres = sorted(genre_counts.items(), key=lambda x: x[1], reverse=True)[:3]
-            analysis.append("## 🎭 Genre Preferences")
-            analysis.append("Your top genres are:")
-            for genre, count in top_genres:
-                analysis.append(f"- **{genre}**: {count} books")
-    
-    return "\n\n".join(analysis)
 
 
 def show_recommendations_page():
@@ -674,6 +816,9 @@ def show_recommendations_page():
         st.metric("Average Rating", f"{user_stats.get('average_rating', 0):.1f}")
     with col4:
         st.metric("Enriched Books", user_stats.get('enriched_books', 0))
+    
+    # Quick navigation at bottom
+    show_quick_navigation()
 
 
 def generate_simple_recommendations(user_books, user_stats, query, limit):

@@ -129,7 +129,8 @@ class ComprehensiveAnalyzer:
         sections = {
             "insights": "",
             "profile": "",
-            "recommendations": ""
+            "recommendations": "",
+            "humorous": ""
         }
         
         # More robust parsing - look for section headers
@@ -153,6 +154,11 @@ class ComprehensiveAnalyzer:
                 if current_section and current_content:
                     sections[current_section] = '\n'.join(current_content)
                 current_section = "recommendations"
+                current_content = [line]
+            elif "## HUMOROUS ROAST ANALYSIS" in line:
+                if current_section and current_content:
+                    sections[current_section] = '\n'.join(current_content)
+                current_section = "humorous"
                 current_content = [line]
             elif "## ANALYSIS SUMMARY" in line:
                 # End of sections, add final section
