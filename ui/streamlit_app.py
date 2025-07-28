@@ -118,57 +118,9 @@ def main():
 def show_upload_page():
     st.header("📤 Upload & Process")
     
-    # Database reset option
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        st.write("Upload your Goodreads CSV file to analyze your reading data.")
-        
-        # Simple instructions for getting CSV
-        with st.expander("📋 How to get your Goodreads CSV file", expanded=False):
-            st.markdown("""
-            **📚 Getting your Goodreads data is easy! Follow these steps:**
-            
-            ### Step 1: Sign in to Goodreads
-            1. Go to [Goodreads.com](https://www.goodreads.com) and sign in to your account
-            2. If you don't have an account, create one first
-            
-            ### Step 2: Export Your Library
-            1. Go directly to: [Goodreads Import/Export Page](https://www.goodreads.com/review/import)
-            2. Click **"Export Library"** button
-            3. Wait for the file to generate (this may take a few minutes)
-            
-            ### Step 3: Download the File
-            1. Once ready, click **"Download"** to save the CSV file
-            2. The file will be named something like `goodreads_library_export.csv`
-            3. Save it somewhere you can easily find (like your Desktop)
-            
-            ### Step 4: Upload Here
-            1. Come back to this page
-            2. Click **"Browse files"** or drag and drop your CSV file
-            3. Click **"Import & Process Data"** to analyze your reading!
-            
-            **💡 Tip:** If you have a large library, the export might take 5-10 minutes to generate. Be patient!
-            """)
-            
-    with col2:
-        if st.button("🗑️ Clear My Data", type="secondary"):
-            with st.spinner("Clearing your data..."):
-                try:
-                    # Clear session data for this user
-                    session_db_manager.clear_user_books()
-                    st.session_state.user_stats = {
-                        'total_books': 0,
-                        'processed_books': 0,
-                        'enriched_books': 0,
-                        'books_with_ratings': 0,
-                        'average_rating': 0.0
-                    }
-                    st.success("✅ Your data cleared successfully!")
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"❌ Failed to clear data: {str(e)}")
+    st.write("Upload your Goodreads CSV file to analyze your reading data.")
     
-    # File upload
+    # File upload at the top
     uploaded_file = st.file_uploader(
         "Upload your Goodreads CSV file",
         type=['csv'],
@@ -302,6 +254,54 @@ def show_upload_page():
                 finally:
                     # Clean up temp file
                     os.unlink(tmp_file_path)
+
+    # Instructions and clear data below the upload section
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        # Simple instructions for getting CSV
+        with st.expander("📋 How to get your Goodreads CSV file", expanded=False):
+            st.markdown("""
+            **📚 Getting your Goodreads data is easy! Follow these steps:**
+            
+            ### Step 1: Sign in to Goodreads
+            1. Go to [Goodreads.com](https://www.goodreads.com) and sign in to your account
+            2. If you don't have an account, create one first
+            
+            ### Step 2: Export Your Library
+            1. Go directly to: [Goodreads Import/Export Page](https://www.goodreads.com/review/import)
+            2. Click **"Export Library"** button
+            3. Wait for the file to generate (this may take a few minutes)
+            
+            ### Step 3: Download the File
+            1. Once ready, click **"Download"** to save the CSV file
+            2. The file will be named something like `goodreads_library_export.csv`
+            3. Save it somewhere you can easily find (like your Desktop)
+            
+            ### Step 4: Upload Here
+            1. Come back to this page
+            2. Click **"Browse files"** or drag and drop your CSV file
+            3. Click **"Import & Process Data"** to analyze your reading!
+            
+            **💡 Tip:** If you have a large library, the export might take 5-10 minutes to generate. Be patient!
+            """)
+            
+    with col2:
+        if st.button("🗑️ Clear My Data", type="secondary"):
+            with st.spinner("Clearing your data..."):
+                try:
+                    # Clear session data for this user
+                    session_db_manager.clear_user_books()
+                    st.session_state.user_stats = {
+                        'total_books': 0,
+                        'processed_books': 0,
+                        'enriched_books': 0,
+                        'books_with_ratings': 0,
+                        'average_rating': 0.0
+                    }
+                    st.success("✅ Your data cleared successfully!")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"❌ Failed to clear data: {str(e)}")
 
     # Quick navigation at bottom
     show_quick_navigation()
@@ -680,22 +680,22 @@ def show_comprehensive_analysis_page_parallel():
         
         with tab1:
             st.info("🔄 **Pending Analysis**")
-            st.write("Your humorous literary roast will appear here once analysis begins.")
+            st.write("Your literary roast will appear here once analysis is complete.")
             st.write("This will include witty observations about your reading habits and personality!")
         
         with tab2:
             st.info("🔄 **Pending Analysis**")
-            st.write("Your personal profile analysis will appear here once analysis begins.")
+            st.write("Your personal  analysis will appear here once analysis is complete.")
             st.write("This will include deep insights about your personality, demographics, and reading psychology!")
         
         with tab3:
             st.info("🔄 **Pending Analysis**")
-            st.write("Your personalized book recommendations will appear here once analysis begins.")
+            st.write("Your personalized book recommendations will appear here once analysis is complete.")
             st.write("This will include curated book suggestions based on your reading history!")
         
         with tab4:
             st.info("🔄 **Pending Analysis**")
-            st.write("Your literary psychology insights will appear here once analysis begins.")
+            st.write("Your literary psychology insights will appear here once analysis is complete.")
             st.write("This will include deep analysis of your reading patterns and psychological profile!")
         
         # Generate button (only show if can_generate)
