@@ -128,132 +128,133 @@ def show_upload_page():
     )
     
     if uploaded_file is not None:
-        st.success(f"File uploaded: {uploaded_file.name}")
-        
-        # Single process button
-        if st.button("🚀 Import & Process Data", type="primary", use_container_width=True):
-            with st.spinner("Processing your Goodreads data..."):
-                # Save uploaded file temporarily
-                with tempfile.NamedTemporaryFile(mode='wb', suffix='.csv', delete=False) as tmp_file:
-                    tmp_file.write(uploaded_file.getvalue())
-                    tmp_file_path = tmp_file.name
-                
-                try:
-                    # Step 1: Process CSV and store in session
-                    import pandas as pd
-                    df = pd.read_csv(tmp_file_path)
+        # Single process button - made larger and more prominent
+        st.markdown("---")
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            if st.button("🚀 Import & Process Data", type="primary", use_container_width=True):
+                with st.spinner("Processing your Goodreads data..."):
+                    # Save uploaded file temporarily
+                    with tempfile.NamedTemporaryFile(mode='wb', suffix='.csv', delete=False) as tmp_file:
+                        tmp_file.write(uploaded_file.getvalue())
+                        tmp_file_path = tmp_file.name
                     
-                    # Clear existing books
-                    session_db_manager.clear_user_books()
-                    
-                    # Process each row
-                    processed_books = 0
-                    skipped_books = 0
-                    
-                    for index, row in df.iterrows():
-                        try:
-                            # Helper function to safely convert to string or None
-                            def safe_str_or_none(value):
-                                if pd.isna(value) or value is None:
-                                    return None
-                                return str(value)
-                            
-                            def safe_str(value, default=''):
-                                if pd.isna(value) or value is None:
-                                    return default
-                                return str(value)
-                            
-                            # Create book data with safe string conversion
-                            book_data = {
-                                'book_id': safe_str(row.get('Book Id'), f'book_{index}'),
-                                'title': safe_str(row.get('Title'), 'Unknown Title'),
-                                'author': safe_str(row.get('Author'), 'Unknown Author'),
-                                'my_rating': int(row.get('My Rating', 0)) if pd.notna(row.get('My Rating')) else None,
-                                'average_rating': float(row.get('Average Rating', 0)) if pd.notna(row.get('Average Rating')) else None,
-                                'date_read': safe_str_or_none(row.get('Date Read')),
-                                'date_added': safe_str_or_none(row.get('Date Added')),
-                                'bookshelves': safe_str_or_none(row.get('Bookshelves')),
-                                'genres_raw': safe_str_or_none(row.get('Genres')),  # Use actual Genres field
-                                'my_review': safe_str_or_none(row.get('My Review')),
-                                'publisher': safe_str_or_none(row.get('Publisher')),
-                                'pages': int(row.get('Number of Pages', 0)) if pd.notna(row.get('Number of Pages')) else None,
-                                'year_published': int(row.get('Original Publication Year', 0)) if pd.notna(row.get('Original Publication Year')) else None,
-                                'isbn': safe_str_or_none(row.get('ISBN')),
-                                'isbn13': safe_str_or_none(row.get('ISBN13'))
-                            }
-                            
-                            # Add to session
-                            session_db_manager.add_user_book(book_data)
-                            processed_books += 1
-                            
-                        except Exception as e:
-                            skipped_books += 1
-                            continue
-                    
-                    # Process book metadata
-                    user_books = session_db_manager.get_user_books()
-                    genre_normalizer = GenreNormalizer()
-                    
-                    for book in user_books:
-                        # Process genres from the actual Genres field
-                        if book.get('genres_raw'):
-                            genres_raw = book['genres_raw']
-                            normalized_genres = genre_normalizer.normalize_bookshelves(genres_raw)
-                            book['genres'] = ", ".join(normalized_genres) if normalized_genres else "Unknown"
-                        elif book.get('bookshelves'):
-                            # Fallback to bookshelves if no genres field
-                            bookshelves_raw = book['bookshelves']
-                            normalized_genres = genre_normalizer.normalize_bookshelves(bookshelves_raw)
-                            book['genres'] = ", ".join(normalized_genres) if normalized_genres else "Unknown"
-                        else:
-                            book['genres'] = "Unknown"
-                    
-                    # Update final stats
-                    books_with_ratings = len([b for b in user_books if b.get('my_rating')])
-                    avg_rating = sum(b.get('my_rating', 0) for b in user_books if b.get('my_rating')) / books_with_ratings if books_with_ratings > 0 else 0
-                    
-                    st.session_state.user_stats = {
-                        'total_books': len(user_books),
-                        'processed_books': processed_books,
-                        'books_with_ratings': books_with_ratings,
-                        'average_rating': round(avg_rating, 2)
-                    }
-                    
-                    st.success(f"✅ Successfully processed {processed_books} books!")
-                    
-                    # Show meaningful summary
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.metric("📚 Total Books", len(user_books))
-                    with col2:
-                        st.metric("⭐ Rated Books", books_with_ratings)
-                    with col3:
-                        st.metric("📊 Average Rating", f"{avg_rating:.1f}" if avg_rating > 0 else "N/A")
-                    
-                    if skipped_books > 0:
-                        st.warning(f"⚠️ Skipped {skipped_books} books due to formatting issues")
-                    
-                    # Start background comprehensive analysis if sufficient data
-                    if len(user_books) >= 5 and books_with_ratings >= 3:
-                        st.session_state.analysis_status = "processing"
-                        st.session_state.analysis_start_time = datetime.now()
-                        # Clear any existing analysis
-                        st.session_state.pop('comprehensive_analysis_result', None)
-                        st.session_state.pop('comprehensive_analysis_sections', None)
+                    try:
+                        # Step 1: Process CSV and store in session
+                        import pandas as pd
+                        df = pd.read_csv(tmp_file_path)
                         
-                        # Note: Actual processing will happen when user navigates to the page
-                        # due to Streamlit's architecture
-                    
-                    # Automatically navigate to Books and Stats after successful upload
-                    st.session_state.selected_page = "📊 Books and Stats"
-                    st.success("✅ Data uploaded successfully! Redirecting to Books and Stats...")
-                    st.rerun()
-                    
-                except Exception as e:
-                    st.error(f"❌ Error processing data: {str(e)}")
-                finally:
-                    # Clean up temp file
-                    os.unlink(tmp_file_path)
+                        # Clear existing books
+                        session_db_manager.clear_user_books()
+                        
+                        # Process each row
+                        processed_books = 0
+                        skipped_books = 0
+                        
+                        for index, row in df.iterrows():
+                            try:
+                                # Helper function to safely convert to string or None
+                                def safe_str_or_none(value):
+                                    if pd.isna(value) or value is None:
+                                        return None
+                                    return str(value)
+                                
+                                def safe_str(value, default=''):
+                                    if pd.isna(value) or value is None:
+                                        return default
+                                    return str(value)
+                                
+                                # Create book data with safe string conversion
+                                book_data = {
+                                    'book_id': safe_str(row.get('Book Id'), f'book_{index}'),
+                                    'title': safe_str(row.get('Title'), 'Unknown Title'),
+                                    'author': safe_str(row.get('Author'), 'Unknown Author'),
+                                    'my_rating': int(row.get('My Rating', 0)) if pd.notna(row.get('My Rating')) else None,
+                                    'average_rating': float(row.get('Average Rating', 0)) if pd.notna(row.get('Average Rating')) else None,
+                                    'date_read': safe_str_or_none(row.get('Date Read')),
+                                    'date_added': safe_str_or_none(row.get('Date Added')),
+                                    'bookshelves': safe_str_or_none(row.get('Bookshelves')),
+                                    'genres_raw': safe_str_or_none(row.get('Genres')),  # Use actual Genres field
+                                    'my_review': safe_str_or_none(row.get('My Review')),
+                                    'publisher': safe_str_or_none(row.get('Publisher')),
+                                    'pages': int(row.get('Number of Pages', 0)) if pd.notna(row.get('Number of Pages')) else None,
+                                    'year_published': int(row.get('Original Publication Year', 0)) if pd.notna(row.get('Original Publication Year')) else None,
+                                    'isbn': safe_str_or_none(row.get('ISBN')),
+                                    'isbn13': safe_str_or_none(row.get('ISBN13'))
+                                }
+                                
+                                # Add to session
+                                session_db_manager.add_user_book(book_data)
+                                processed_books += 1
+                                
+                            except Exception as e:
+                                skipped_books += 1
+                                continue
+                        
+                        # Process book metadata
+                        user_books = session_db_manager.get_user_books()
+                        genre_normalizer = GenreNormalizer()
+                        
+                        for book in user_books:
+                            # Process genres from the actual Genres field
+                            if book.get('genres_raw'):
+                                genres_raw = book['genres_raw']
+                                normalized_genres = genre_normalizer.normalize_bookshelves(genres_raw)
+                                book['genres'] = ", ".join(normalized_genres) if normalized_genres else "Unknown"
+                            elif book.get('bookshelves'):
+                                # Fallback to bookshelves if no genres field
+                                bookshelves_raw = book['bookshelves']
+                                normalized_genres = genre_normalizer.normalize_bookshelves(bookshelves_raw)
+                                book['genres'] = ", ".join(normalized_genres) if normalized_genres else "Unknown"
+                            else:
+                                book['genres'] = "Unknown"
+                        
+                        # Update final stats
+                        books_with_ratings = len([b for b in user_books if b.get('my_rating')])
+                        avg_rating = sum(b.get('my_rating', 0) for b in user_books if b.get('my_rating')) / books_with_ratings if books_with_ratings > 0 else 0
+                        
+                        st.session_state.user_stats = {
+                            'total_books': len(user_books),
+                            'processed_books': processed_books,
+                            'books_with_ratings': books_with_ratings,
+                            'average_rating': round(avg_rating, 2)
+                        }
+                        
+                        st.success(f"✅ Successfully processed {processed_books} books!")
+                        
+                        # Show meaningful summary
+                        col1, col2, col3 = st.columns(3)
+                        with col1:
+                            st.metric("📚 Total Books", len(user_books))
+                        with col2:
+                            st.metric("⭐ Rated Books", books_with_ratings)
+                        with col3:
+                            st.metric("📊 Average Rating", f"{avg_rating:.1f}" if avg_rating > 0 else "N/A")
+                        
+                        if skipped_books > 0:
+                            st.warning(f"⚠️ Skipped {skipped_books} books due to formatting issues")
+                        
+                        # Start background comprehensive analysis if sufficient data
+                        if len(user_books) >= 5 and books_with_ratings >= 3:
+                            st.session_state.analysis_status = "processing"
+                            st.session_state.analysis_start_time = datetime.now()
+                            # Clear any existing analysis
+                            st.session_state.pop('comprehensive_analysis_result', None)
+                            st.session_state.pop('comprehensive_analysis_sections', None)
+                            
+                            # Note: Actual processing will happen when user navigates to the page
+                            # due to Streamlit's architecture
+                        
+                        # Automatically navigate to Books and Stats after successful upload
+                        st.session_state.selected_page = "📊 Books and Stats"
+                        st.success("✅ Data uploaded successfully! Redirecting to Books and Stats...")
+                        st.rerun()
+                        
+                    except Exception as e:
+                        st.error(f"❌ Error processing data: {str(e)}")
+                    finally:
+                        # Clean up temp file
+                        os.unlink(tmp_file_path)
 
     # Instructions and clear data below the upload section
     col1, col2 = st.columns([3, 1])
