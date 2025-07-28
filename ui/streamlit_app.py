@@ -83,6 +83,20 @@ def main():
     # Clean Sidebar Navigation
     st.sidebar.title("📚 Navigation")
     
+    # Custom CSS for navigation styling
+    st.markdown("""
+    <style>
+    .active-nav {
+        background-color: #ff4b4b;
+        color: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        margin: 4px 0;
+        font-weight: bold;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
     # Simplified list of main pages only
     main_pages = [
         "📤 Upload", 
@@ -92,15 +106,25 @@ def main():
     
     # Check if page was selected via main buttons
     if 'selected_page' in st.session_state and st.session_state.selected_page in main_pages:
-        default_index = main_pages.index(st.session_state.selected_page)
+        current_page = st.session_state.selected_page
     else:
-        default_index = 0
+        current_page = main_pages[0]
     
-    page = st.sidebar.radio(
-        "Choose a section:",
-        main_pages,
-        index=default_index
-    )
+    # Create navigation buttons with different styling for active state
+    for i, page_name in enumerate(main_pages):
+        is_active = page_name == current_page
+        
+        if is_active:
+            # Active page - bold text with background highlighting
+            st.sidebar.markdown(f'<div class="active-nav">{page_name}</div>', unsafe_allow_html=True)
+        else:
+            # Inactive page - clickable button
+            if st.sidebar.button(page_name, key=f"nav_{i}"):
+                st.session_state.selected_page = page_name
+                st.rerun()
+    
+    # Use current page for routing
+    page = current_page
     
     # Update session state
     st.session_state.selected_page = page
@@ -715,7 +739,7 @@ def show_comprehensive_analysis_page_parallel():
             "😂  ROAST ME  😂", 
             "👤  PERSONAL PROFILE  👤", 
             "📚  RECOMMENDATIONS  📚", 
-            "📖  LITERARY INSIGHTS  📖"
+            "��  LITERARY INSIGHTS  📖"
         ])
         
         with tab1:
