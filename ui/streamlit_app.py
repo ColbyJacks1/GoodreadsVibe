@@ -58,6 +58,12 @@ def show_quick_navigation():
         if st.button("🔮 Analyze Me",
                     help="Get deep insights and recommendations",
                     use_container_width=True):
+            # Clear any previous page content to prevent bleed
+            for key in list(st.session_state.keys()):
+                if key.startswith(('analysis_', 'comprehensive_', 'quick_')):
+                    continue  # Keep analysis state
+                if key in ['user_books', 'user_stats', 'selected_page']:
+                    continue  # Keep essential state
             st.session_state.selected_page = "🔮 Analyze Me"
             st.rerun()
 
@@ -489,6 +495,12 @@ def show_books_and_stats_page():
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
             if st.button("🔮 Go to Analyze Me", type="primary", use_container_width=True):
+                # Clear any previous page content to prevent bleed
+                for key in list(st.session_state.keys()):
+                    if key.startswith(('analysis_', 'comprehensive_', 'quick_')):
+                        continue  # Keep analysis state
+                    if key in ['user_books', 'user_stats', 'selected_page']:
+                        continue  # Keep essential state
                 st.session_state.selected_page = "🔮 Analyze Me"
                 st.rerun()
         
@@ -727,9 +739,10 @@ def show_profile_analysis_page():
 
 
 def show_comprehensive_analysis_page_parallel():
-    # Clear any previous content and ensure clean white background
-    st.empty()
-    st.markdown('<div style="background-color: white; padding: 10px;"></div>', unsafe_allow_html=True)
+    # Clear previous page content completely
+    with st.container():
+        st.markdown("")  # Force content clear
+    
     st.header("🔮 Analyze Me")
     
     # Get user data
@@ -817,7 +830,7 @@ def show_comprehensive_analysis_page_parallel():
             # Show all 4 tabs with processing placeholders
             tab1, tab2, tab3, tab4 = st.tabs([
                 "😂  ROAST ME  😂", 
-                "��  RECOMMENDATIONS  📚", 
+                "📚  RECOMMENDATIONS  📚", 
                 "👤  PERSONAL PROFILE  👤", 
                 "📖  LITERARY INSIGHTS  📖"
             ])
