@@ -691,7 +691,33 @@ def show_comprehensive_analysis_page_parallel():
                 st.rerun()
             
             # After quick analysis completes, start comprehensive analysis
-            elif st.session_state.get('analysis_status') == "quick_completed" and 'comprehensive_analysis_started' not in st.session_state:
+            # This block is now moved to the quick_completed case
+            
+            
+            # Auto-refresh every 3 seconds to check if complete
+            import time
+            # Check if we should auto-refresh (every 3 seconds)
+            current_time = time.time()
+            if 'last_refresh' not in st.session_state:
+                st.session_state.last_refresh = current_time
+            
+            if current_time - st.session_state.last_refresh > 3:
+                st.session_state.last_refresh = current_time
+                st.rerun()
+            else:
+                # Show refresh button as alternative
+                if st.button("🔄 Check Status"):
+                    st.rerun()
+        
+
+        
+        elif analysis_status == "quick_completed":
+            # Show quick analysis results while comprehensive is running
+            st.success("✅ Quick analysis completed! Comprehensive analysis in progress...")
+            st.info("⏱️ **AI processing may take up to 2 minutes** - please be patient!")
+            
+            # Start comprehensive analysis if not already started
+            if 'comprehensive_analysis_started' not in st.session_state:
                 st.session_state.comprehensive_analysis_started = True
                 with st.spinner("Generating comprehensive analysis (insights + profile)..."):
                     try:
@@ -718,29 +744,6 @@ def show_comprehensive_analysis_page_parallel():
                     finally:
                         st.session_state.pop("comprehensive_analysis_started", None)
                 st.rerun()
-        
-            
-            # Auto-refresh every 3 seconds to check if complete
-            import time
-            # Check if we should auto-refresh (every 3 seconds)
-            current_time = time.time()
-            if 'last_refresh' not in st.session_state:
-                st.session_state.last_refresh = current_time
-            
-            if current_time - st.session_state.last_refresh > 3:
-                st.session_state.last_refresh = current_time
-                st.rerun()
-            else:
-                # Show refresh button as alternative
-                if st.button("🔄 Check Status"):
-                    st.rerun()
-        
-
-        
-        elif analysis_status == "quick_completed":
-            # Show quick analysis results while comprehensive is running
-            st.success("✅ Quick analysis completed! Comprehensive analysis in progress...")
-            st.info("⏱️ **AI processing may take up to 2 minutes** - please be patient!")
             
             # Show quick analysis results
             if 'quick_analysis_sections' in st.session_state:
