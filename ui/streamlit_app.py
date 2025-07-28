@@ -117,7 +117,7 @@ def main():
     elif page_clean == "Dashboard":
         show_dashboard_page()
     elif page_clean == "Comprehensive Analysis":
-        show_comprehensive_analysis_page()
+        show_comprehensive_analysis_page_parallel()
     elif page_clean == "Insights":
         show_insights_page()
     elif page_clean == "Profile Analysis":
@@ -132,6 +132,18 @@ def show_upload_page():
     col1, col2 = st.columns([3, 1])
     with col1:
         st.write("Upload your Goodreads CSV file to analyze your reading data.")
+        
+        # Simple instructions for getting CSV
+        with st.expander("📋 How to get your Goodreads CSV file", expanded=False):
+            st.markdown("""
+            **Getting your Goodreads data is easy:**
+            1. Go to [Goodreads My Books](https://www.goodreads.com/review/import)
+            2. Click **"Export Library"** button
+            3. Wait for the file to generate (may take a few minutes)
+            4. Download the CSV file
+            5. Upload it here!
+            """)
+            
     with col2:
         if st.button("🗑️ Clear My Data", type="secondary"):
             with st.spinner("Clearing your data..."):
@@ -427,6 +439,7 @@ def show_insights_page():
         
         # Generate Insights button
         if st.button("🔮 Generate Insights"):
+            st.info("⏱️ **AI processing may take up to 2 minutes** - please be patient!")
             with st.spinner("Generating deep literary psychology insights..."):
                 try:
                     # Create simple insights based on user data
@@ -590,6 +603,7 @@ def show_profile_analysis_page():
         
         # Generate Profile Analysis button
         if st.button("🔍 Analyze My Profile"):
+            st.info("⏱️ **AI processing may take up to 2 minutes** - please be patient!")
             with st.spinner("Analyzing your reading patterns for personal insights..."):
                 try:
                     # Generate simple profile analysis using session data
@@ -606,7 +620,7 @@ def show_profile_analysis_page():
     show_quick_navigation()
 
 
-def show_comprehensive_analysis_page():
+def show_comprehensive_analysis_page_parallel():
     st.header("🔮 Comprehensive Analysis")
     
     # Get user data
@@ -626,6 +640,7 @@ def show_comprehensive_analysis_page():
         if analysis_status == "processing":
             # Show processing state
             st.info("🔄 **Processing your comprehensive analysis...**")
+            st.info("⏱️ **AI processing may take up to 2 minutes** - please be patient!")
             
             # Show progress and estimated time
             if 'analysis_start_time' in st.session_state:
@@ -633,6 +648,7 @@ def show_comprehensive_analysis_page():
                 elapsed = datetime.now() - st.session_state.analysis_start_time
                 elapsed_seconds = int(elapsed.total_seconds())
                 st.write(f"⏱️ Processing time: {elapsed_seconds} seconds")
+                st.write(f"⏱️ Estimated Time: {elapsed_seconds} seconds")
             
             st.write("📚 Analyzing your reading patterns...")
             st.write("🧠 Generating psychological insights...")
@@ -642,24 +658,45 @@ def show_comprehensive_analysis_page():
             # Trigger actual processing
             if 'analysis_processing_started' not in st.session_state:
                 st.session_state.analysis_processing_started = True
-                with st.spinner("Generating analysis..."):
+                with st.spinner("Generating fast analysis..."):
                     try:
                         from app.comprehensive_analysis import comprehensive_analyzer
-                        result = comprehensive_analyzer.generate_comprehensive_analysis()
-                        if result.get('success'):
-                            st.session_state.comprehensive_analysis_result = result['comprehensive_analysis']
-                            st.session_state.comprehensive_analysis_sections = result['parsed_sections']
-                            st.session_state.analysis_status = "completed"
+                        
+                        # Generate fast analysis first (insights + profile)
+                        fast_result = comprehensive_analyzer.generate_fast_analysis()
+                        if fast_result.get("success"):
+                            st.session_state.fast_analysis_sections = fast_result.get("parsed_sections", {})
+                            st.success("✅ Fast analysis completed!")
                         else:
+                            st.error(f"❌ Fast analysis failed: {fast_result.get("error")}")
                             st.session_state.analysis_status = "error"
-                            st.session_state.analysis_error = result.get('error', 'Unknown error')
+                            st.session_state.analysis_error = fast_result.get("error", "Unknown error")
+                            st.rerun()
+                        
+                        # Generate detailed analysis (roast + recommendations)
+                        with st.spinner("Generating detailed analysis..."):
+                            detailed_result = comprehensive_analyzer.generate_detailed_analysis()
+                            if detailed_result.get("success"):
+                                st.session_state.detailed_analysis_sections = detailed_result.get("parsed_sections", {})
+                                st.success("✅ Detailed analysis completed!")
+                            else:
+                                st.warning(f"⚠️ Detailed analysis failed: {detailed_result.get("error")}")
+                                st.session_state.detailed_analysis_sections = {}
+                        
+                        # Combine sections
+                        all_sections = {}
+                        all_sections.update(st.session_state.get("fast_analysis_sections", {}))
+                        all_sections.update(st.session_state.get("detailed_analysis_sections", {}))
+                        st.session_state.comprehensive_analysis_sections = all_sections
+                        
+                        st.session_state.analysis_status = "completed"
+                        
                     except Exception as e:
                         st.session_state.analysis_status = "error"
                         st.session_state.analysis_error = str(e)
                     finally:
-                        st.session_state.pop('analysis_processing_started', None)
-                st.rerun()
-            
+                        st.session_state.pop("analysis_processing_started", None)
+                st.rerun()            
             # Auto-refresh every 3 seconds to check if complete
             import time
             # Check if we should auto-refresh (every 3 seconds)
@@ -790,6 +827,7 @@ def show_recommendations_page():
     limit = st.slider("Number of recommendations", 5, 20, 10)
     
     if st.button("🔍 Get AI Recommendations") and query:
+        st.info("⏱️ **AI processing may take up to 2 minutes** - please be patient!")
         with st.spinner("Analyzing your reading history and generating personalized recommendations..."):
             try:
                 # Generate simple recommendations based on user data
