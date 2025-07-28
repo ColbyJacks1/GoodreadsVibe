@@ -226,6 +226,15 @@ def show_upload_page():
                             else:
                                 book_data['genres'] = None
                             
+                            # Normalize genres using GenreNormalizer
+                            if book_data['genres']:
+                                from app.ingest import GenreNormalizer
+                                genre_normalizer = GenreNormalizer()
+                                normalized_genres = genre_normalizer.normalize_bookshelves(book_data['genres'])
+                                book_data['genres'] = ", ".join(normalized_genres) if normalized_genres else "Unknown"
+                            else:
+                                book_data['genres'] = "Unknown"
+                            
                             # Store book in session database
                             session_db_manager.add_user_book(book_data)
                             processed_books += 1
@@ -237,9 +246,15 @@ def show_upload_page():
                     # Update session state
                     st.session_state.user_books = session_db_manager.get_user_books()
                     
-                    # Calculate stats
-                    books_with_ratings = sum(1 for book in st.session_state.user_books if hasattr(book, 'my_rating') and book.my_rating and book.my_rating > 0)
-                    total_rating = sum(book.my_rating for book in st.session_state.user_books if hasattr(book, 'my_rating') and book.my_rating and book.my_rating > 0)
+                    # Calculate stats - fix rating calculation
+                    books_with_ratings = 0
+                    total_rating = 0
+                    
+                    for book in st.session_state.user_books:
+                        if hasattr(book, 'my_rating') and book.my_rating is not None and book.my_rating > 0:
+                            books_with_ratings += 1
+                            total_rating += book.my_rating
+                    
                     avg_rating = total_rating / books_with_ratings if books_with_ratings > 0 else 0
                     
                     st.session_state.user_stats = {
@@ -678,6 +693,11 @@ def show_comprehensive_analysis_page_parallel():
     # Check if comprehensive analysis can be generated
     total_books = user_stats.get('total_books', 0)
     books_with_ratings = user_stats.get('books_with_ratings', 0)
+    
+    # Debug information
+    st.write(f"🔍 Debug: Total books = {total_books}")
+    st.write(f"🔍 Debug: Books with ratings = {books_with_ratings}")
+    st.write(f"🔍 Debug: Requirements met = {total_books >= 5 and books_with_ratings >= 3}")
     
     can_generate = total_books >= 5 and books_with_ratings >= 3
     
