@@ -92,6 +92,42 @@ class SessionDatabaseManager:
         # Session state is automatically initialized
         pass
 
+    def clear_all(self) -> None:
+        """Clear all data for current user."""
+        # Clear books
+        books_key = self._get_session_key("books")
+        if books_key in st.session_state:
+            del st.session_state[books_key]
+        
+        # Clear stats
+        stats_key = self._get_session_key("stats")
+        if stats_key in st.session_state:
+            del st.session_state[stats_key]
+        
+        # Clear LLM history
+        history_key = self._get_session_key("llm_history")
+        if history_key in st.session_state:
+            del st.session_state[history_key]
+        
+        # Clear analysis results
+        for key in list(st.session_state.keys()):
+            if key.startswith(self.session_key_prefix):
+                del st.session_state[key]
+        
+        # Clear analysis status
+        if 'analysis_status' in st.session_state:
+            del st.session_state['analysis_status']
+        if 'analysis_start_time' in st.session_state:
+            del st.session_state['analysis_start_time']
+        if 'comprehensive_analysis_result' in st.session_state:
+            del st.session_state['comprehensive_analysis_result']
+        if 'comprehensive_analysis_sections' in st.session_state:
+            del st.session_state['comprehensive_analysis_sections']
+        if 'quick_analysis_sections' in st.session_state:
+            del st.session_state['quick_analysis_sections']
+        if 'comprehensive_analysis_sections_parallel' in st.session_state:
+            del st.session_state['comprehensive_analysis_sections_parallel']
+
 
 # Global session database manager instance
 session_db_manager = SessionDatabaseManager() 
