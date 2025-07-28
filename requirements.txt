@@ -1,9 +1,14 @@
-streamlit==1.32.0
-sqlmodel==0.0.14
+# core app
+streamlit>=1.41
+sqlmodel>=0.0.24
+pydantic>=2,<3
+
+# data stack
+pandas>=2.2.3,<2.4
+numpy>=2.1,<3
 plotly==5.18.0
-pandas==2.2.3
-numpy==1.26.4
+
+# misc
 requests==2.31.0
 python-dotenv==1.0.1
-google-generativeai==0.8.5
-pydantic==2.11.7 
+google-generativeai==0.8.5 
