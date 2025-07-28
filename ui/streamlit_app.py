@@ -220,37 +220,23 @@ def show_upload_page():
                             skipped_books += 1
                             continue
                     
-                    # Step 2: Enrich metadata
+                    # Process book metadata
                     user_books = session_db_manager.get_user_books()
-                    enriched_count = 0
                     genre_normalizer = GenreNormalizer()
                     
-                    # Debug: Show available columns from first book
-                    if user_books:
-                        st.write("**Debug - Available fields:**", list(user_books[0].keys()))
-                    
                     for book in user_books:
-                        # Process genres - prefer Genres field, fallback to Bookshelves  
-                        genre_source = book.get('genres_raw') or book.get('bookshelves')
-                        
-                        if genre_source and genre_source.strip():
-                            normalized_genres = genre_normalizer.normalize_bookshelves(genre_source)
-                            book['genres'] = ", ".join(normalized_genres) if normalized_genres else "Fiction"
-                            
-                            # Debug first book
-                            if book == user_books[0]:
-                                st.write(f"**Debug - {book['title']}:**")
-                                st.write(f"- Raw: `{genre_source}`")
-                                st.write(f"- Normalized: `{normalized_genres}`")
+                        # Process genres from the actual Genres field
+                        if book.get('genres_raw'):
+                            genres_raw = book['genres_raw']
+                            normalized_genres = genre_normalizer.normalize_bookshelves(genres_raw)
+                            book['genres'] = ", ".join(normalized_genres) if normalized_genres else "Unknown"
+                        elif book.get('bookshelves'):
+                            # Fallback to bookshelves if no genres field
+                            bookshelves_raw = book['bookshelves']
+                            normalized_genres = genre_normalizer.normalize_bookshelves(bookshelves_raw)
+                            book['genres'] = ", ".join(normalized_genres) if normalized_genres else "Unknown"
                         else:
-                            book['genres'] = "Fiction"  # Default instead of Unknown
-                        
-                        # Simulate other enrichment with additional metadata
-                        if not book.get('description'):
-                            book['description'] = f"Enriched description for {book['title']}"
-                            book['language'] = "English"  # Placeholder
-                            book['format'] = "Paperback"  # Placeholder
-                            enriched_count += 1
+                            book['genres'] = "Unknown"
                     
                     # Update final stats
                     books_with_ratings = len([b for b in user_books if b.get('my_rating')])
@@ -259,30 +245,34 @@ def show_upload_page():
                     st.session_state.user_stats = {
                         'total_books': len(user_books),
                         'processed_books': processed_books,
-                        'enriched_books': enriched_count,
                         'books_with_ratings': books_with_ratings,
                         'average_rating': round(avg_rating, 2)
                     }
                     
                     st.success(f"✅ Successfully processed {processed_books} books!")
                     
-                    # Show main stats
-                    col1, col2 = st.columns(2)
+                    # Show meaningful summary
+                    col1, col2, col3 = st.columns(3)
                     with col1:
                         st.metric("📚 Total Books", len(user_books))
                     with col2:
                         st.metric("⭐ Rated Books", books_with_ratings)
+                    with col3:
+                        st.metric("📊 Average Rating", f"{avg_rating:.1f}" if avg_rating > 0 else "N/A")
                     
                     if skipped_books > 0:
                         st.warning(f"⚠️ Skipped {skipped_books} books due to formatting issues")
                     
-                    # Start background comprehensive analysis silently
+                    # Start background comprehensive analysis if sufficient data
                     if len(user_books) >= 5 and books_with_ratings >= 3:
                         st.session_state.analysis_status = "processing"
                         st.session_state.analysis_start_time = datetime.now()
                         # Clear any existing analysis
                         st.session_state.pop('comprehensive_analysis_result', None)
                         st.session_state.pop('comprehensive_analysis_sections', None)
+                        
+                        # Note: Actual processing will happen when user navigates to the page
+                        # due to Streamlit's architecture
                     
                 except Exception as e:
                     st.error(f"❌ Error processing data: {str(e)}")
@@ -812,15 +802,13 @@ def show_recommendations_page():
     # Recommendation stats
     st.subheader("📊 Your Reading Stats")
     
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3 = st.columns(3)
     with col1:
         st.metric("Total Books", user_stats.get('total_books', 0))
     with col2:
         st.metric("Rated Books", user_stats.get('books_with_ratings', 0))
     with col3:
         st.metric("Average Rating", f"{user_stats.get('average_rating', 0):.1f}")
-    with col4:
-        st.metric("Enriched Books", user_stats.get('enriched_books', 0))
     
     # Quick navigation at bottom
     show_quick_navigation()
