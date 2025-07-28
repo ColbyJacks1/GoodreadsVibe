@@ -124,8 +124,8 @@ class ComprehensiveAnalyzer:
             ))
             return {"error": str(e), "raw_response": str(e)}
 
-    def generate_fast_analysis(self) -> Dict[str, Any]:
-        """Generate fast analysis (insights + profile) for immediate display."""
+    def generate_quick_analysis(self) -> Dict[str, Any]:
+        """Generate quick analysis (roast + recommendations) for immediate display."""
         try:
             if not self.model:
                 return {"error": "Google Gemini model not available"}
@@ -136,35 +136,35 @@ class ComprehensiveAnalyzer:
             
             books_text = self._format_books(books)
             
-            # Load fast analysis prompt
-            prompt_path = Path(__file__).parent.parent / "prompts" / "fast_analysis_prompt.md"
+            # Load quick analysis prompt
+            prompt_path = Path(__file__).parent.parent / "prompts" / "quick_analysis_prompt.md"
             with open(prompt_path, 'r') as f:
-                fast_prompt_template = f.read()
+                quick_prompt_template = f.read()
             
-            fast_prompt = fast_prompt_template.format(books=books_text)
+            quick_prompt = quick_prompt_template.format(books=books_text)
             
-            logger.info("Generating fast analysis...")
-            response = self.model.generate_content(fast_prompt)
+            logger.info("Generating quick analysis...")
+            response = self.model.generate_content(quick_prompt)
             
             if not response.text:
                 return {"error": "No response from LLM"}
             
-            # Parse fast response
-            parsed_sections = self._parse_fast_response(response.text)
+            # Parse quick response
+            parsed_sections = self._parse_quick_response(response.text)
             
             return {
                 "success": True,
-                "fast_analysis": response.text,
+                "quick_analysis": response.text,
                 "parsed_sections": parsed_sections,
                 "raw_response": response.text
             }
         
         except Exception as e:
-            logger.error(f"Error generating fast analysis: {str(e)}")
+            logger.error(f"Error generating quick analysis: {str(e)}")
             return {"error": str(e)}
 
-    def generate_detailed_analysis(self) -> Dict[str, Any]:
-        """Generate detailed analysis (roast + recommendations) for secondary display."""
+    def generate_comprehensive_analysis_parallel(self) -> Dict[str, Any]:
+        """Generate comprehensive analysis (insights + profile) for secondary display."""
         try:
             if not self.model:
                 return {"error": "Google Gemini model not available"}
@@ -175,31 +175,31 @@ class ComprehensiveAnalyzer:
             
             books_text = self._format_books(books)
             
-            # Load detailed analysis prompt
-            prompt_path = Path(__file__).parent.parent / "prompts" / "detailed_analysis_prompt.md"
+            # Load comprehensive analysis prompt
+            prompt_path = Path(__file__).parent.parent / "prompts" / "comprehensive_analysis_prompt_parallel.md"
             with open(prompt_path, 'r') as f:
-                detailed_prompt_template = f.read()
+                comprehensive_prompt_template = f.read()
             
-            detailed_prompt = detailed_prompt_template.format(books=books_text)
+            comprehensive_prompt = comprehensive_prompt_template.format(books=books_text)
             
-            logger.info("Generating detailed analysis...")
-            response = self.model.generate_content(detailed_prompt)
+            logger.info("Generating comprehensive analysis parallel...")
+            response = self.model.generate_content(comprehensive_prompt)
             
             if not response.text:
                 return {"error": "No response from LLM"}
             
-            # Parse detailed response
-            parsed_sections = self._parse_detailed_response(response.text)
+            # Parse comprehensive response
+            parsed_sections = self._parse_comprehensive_response_parallel(response.text)
             
             return {
                 "success": True,
-                "detailed_analysis": response.text,
+                "comprehensive_analysis_parallel": response.text,
                 "parsed_sections": parsed_sections,
                 "raw_response": response.text
             }
         
         except Exception as e:
-            logger.error(f"Error generating detailed analysis: {str(e)}")
+            logger.error(f"Error generating comprehensive analysis parallel: {str(e)}")
             return {"error": str(e)}
     
     def _parse_comprehensive_response(self, response_text: str) -> Dict[str, str]:
@@ -252,46 +252,14 @@ class ComprehensiveAnalyzer:
         
         return sections
 
-    def _parse_fast_response(self, response_text: str) -> Dict[str, str]:
-        """Parse the fast response into separate sections."""
-        sections = {
-            "insights": "",
-            "profile": ""
-        }
-        
-        # Parse fast response (insights + profile)
-        lines = response_text.split('\n')
-        current_section = None
-        current_content = []
-        
-        for line in lines:
-            if "## LITERARY PSYCHOLOGY INSIGHTS" in line:
-                if current_section and current_content:
-                    sections[current_section] = '\n'.join(current_content)
-                current_section = "insights"
-                current_content = [line]
-            elif "## PERSONAL PROFILE ANALYSIS" in line:
-                if current_section and current_content:
-                    sections[current_section] = '\n'.join(current_content)
-                current_section = "profile"
-                current_content = [line]
-            elif current_section:
-                current_content.append(line)
-        
-        # Add the last section
-        if current_section and current_content:
-            sections[current_section] = '\n'.join(current_content)
-        
-        return sections
-
-    def _parse_detailed_response(self, response_text: str) -> Dict[str, str]:
-        """Parse the detailed response into separate sections."""
+    def _parse_quick_response(self, response_text: str) -> Dict[str, str]:
+        """Parse the quick response into separate sections."""
         sections = {
             "humorous": "",
             "recommendations": ""
         }
         
-        # Parse detailed response (roast + recommendations)
+        # Parse quick response (roast + recommendations)
         lines = response_text.split('\n')
         current_section = None
         current_content = []
@@ -306,6 +274,38 @@ class ComprehensiveAnalyzer:
                 if current_section and current_content:
                     sections[current_section] = '\n'.join(current_content)
                 current_section = "recommendations"
+                current_content = [line]
+            elif current_section:
+                current_content.append(line)
+        
+        # Add the last section
+        if current_section and current_content:
+            sections[current_section] = '\n'.join(current_content)
+        
+        return sections
+
+    def _parse_comprehensive_response_parallel(self, response_text: str) -> Dict[str, str]:
+        """Parse the comprehensive response parallel into separate sections."""
+        sections = {
+            "insights": "",
+            "profile": ""
+        }
+        
+        # Parse comprehensive response (insights + profile)
+        lines = response_text.split('\n')
+        current_section = None
+        current_content = []
+        
+        for line in lines:
+            if "## LITERARY PSYCHOLOGY INSIGHTS" in line:
+                if current_section and current_content:
+                    sections[current_section] = '\n'.join(current_content)
+                current_section = "insights"
+                current_content = [line]
+            elif "## PERSONAL PROFILE ANALYSIS" in line:
+                if current_section and current_content:
+                    sections[current_section] = '\n'.join(current_content)
+                current_section = "profile"
                 current_content = [line]
             elif current_section:
                 current_content.append(line)

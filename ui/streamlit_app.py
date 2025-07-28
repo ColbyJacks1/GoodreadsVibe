@@ -658,35 +658,35 @@ def show_comprehensive_analysis_page_parallel():
             # Trigger actual processing
             if 'analysis_processing_started' not in st.session_state:
                 st.session_state.analysis_processing_started = True
-                with st.spinner("Generating fast analysis..."):
+                with st.spinner("Generating quick analysis..."):
                     try:
                         from app.comprehensive_analysis import comprehensive_analyzer
                         
                         # Generate fast analysis first (insights + profile)
-                        fast_result = comprehensive_analyzer.generate_fast_analysis()
-                        if fast_result.get("success"):
-                            st.session_state.fast_analysis_sections = fast_result.get("parsed_sections", {})
-                            st.success("✅ Fast analysis completed!")
+                        quick_result = comprehensive_analyzer.generate_quick_analysis()
+                        if quick_result.get("success"):
+                            st.session_state.quick_analysis_sections = quick_result.get("parsed_sections", {})
+                            st.success("✅ Quick analysis completed!")
                         else:
-                            st.error(f"❌ Fast analysis failed: {fast_result.get("error")}")
+                            st.error(f"❌ Quick analysis failed: {quick_result.get("error")}")
                             st.session_state.analysis_status = "error"
-                            st.session_state.analysis_error = fast_result.get("error", "Unknown error")
+                            st.session_state.analysis_error = quick_result.get("error", "Unknown error")
                             st.rerun()
                         
                         # Generate detailed analysis (roast + recommendations)
-                        with st.spinner("Generating detailed analysis..."):
-                            detailed_result = comprehensive_analyzer.generate_detailed_analysis()
-                            if detailed_result.get("success"):
-                                st.session_state.detailed_analysis_sections = detailed_result.get("parsed_sections", {})
-                                st.success("✅ Detailed analysis completed!")
+                        with st.spinner("Generating comprehensive analysis..."):
+                            comprehensive_result_parallel = comprehensive_analyzer.generate_comprehensive_analysis_parallel()
+                            if comprehensive_result_parallel.get("success"):
+                                st.session_state.comprehensive_analysis_sections_parallel = comprehensive_result_parallel.get("parsed_sections", {})
+                                st.success("✅ Comprehensive analysis completed!")
                             else:
-                                st.warning(f"⚠️ Detailed analysis failed: {detailed_result.get("error")}")
-                                st.session_state.detailed_analysis_sections = {}
+                                st.warning(f"⚠️ Comprehensive analysis failed: {comprehensive_result_parallel.get("error")}")
+                                st.session_state.comprehensive_analysis_sections_parallel = {}
                         
                         # Combine sections
                         all_sections = {}
-                        all_sections.update(st.session_state.get("fast_analysis_sections", {}))
-                        all_sections.update(st.session_state.get("detailed_analysis_sections", {}))
+                        all_sections.update(st.session_state.get("quick_analysis_sections", {}))
+                        all_sections.update(st.session_state.get("comprehensive_analysis_sections_parallel", {}))
                         st.session_state.comprehensive_analysis_sections = all_sections
                         
                         st.session_state.analysis_status = "completed"
