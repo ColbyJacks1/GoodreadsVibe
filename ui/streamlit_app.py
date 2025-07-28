@@ -851,10 +851,27 @@ def show_comprehensive_analysis_page_parallel():
                             
                         # Debug: Check if method exists
                         if not hasattr(comprehensive_analyzer, 'generate_quick_analysis'):
-                            st.error(f"Method 'generate_quick_analysis' not found. Available methods: {[method for method in dir(comprehensive_analyzer) if not method.startswith('_')]}")
-                            st.stop()
-                        
-                        quick_result = comprehensive_analyzer.generate_quick_analysis()
+                            st.warning(f"Method 'generate_quick_analysis' not found. Available methods: {[method for method in dir(comprehensive_analyzer) if not method.startswith('_')]}")
+                            st.warning("Attempting to force reload the module...")
+                            
+                            # Try to force reload the module for Streamlit Cloud
+                            try:
+                                import importlib
+                                import app.comprehensive_analysis
+                                importlib.reload(app.comprehensive_analysis)
+                                from app.comprehensive_analysis import comprehensive_analyzer as reloaded_analyzer
+                                
+                                if hasattr(reloaded_analyzer, 'generate_quick_analysis'):
+                                    st.success("✅ Successfully reloaded module with correct methods!")
+                                    quick_result = reloaded_analyzer.generate_quick_analysis()
+                                else:
+                                    st.error(f"❌ Even after reload, method not found. Methods: {[method for method in dir(reloaded_analyzer) if not method.startswith('_')]}")
+                                    st.stop()
+                            except Exception as reload_error:
+                                st.error(f"❌ Failed to reload module: {reload_error}")
+                                st.stop()
+                        else:
+                            quick_result = comprehensive_analyzer.generate_quick_analysis()
                         st.write(f"Debug - Quick analysis result success: {quick_result.get('success', False)}")
                         st.write(f"Debug - Quick analysis sections: {list(quick_result.get('parsed_sections', {}).keys())}")
                         st.write(f"Debug - Quick analysis sections lengths: { {k: len(v) for k, v in quick_result.get('parsed_sections', {}).items()} }")

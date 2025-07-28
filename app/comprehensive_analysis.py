@@ -1,5 +1,6 @@
 """Comprehensive book analysis using Google Gemini."""
 
+# Version: 2024-12-19 - Fixed for Streamlit Cloud deployment
 import json
 import logging
 import os
@@ -431,4 +432,6 @@ You prefer books that challenge your thinking and expand your worldview. You're 
 
 
 # Global comprehensive analyzer instance
+print("🔄 Creating comprehensive_analyzer instance...")
 comprehensive_analyzer = ComprehensiveAnalyzer()
+print(f"✅ Created comprehensive_analyzer with methods: {[m for m in dir(comprehensive_analyzer) if not m.startswith('_')]}")
