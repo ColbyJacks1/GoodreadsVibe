@@ -664,40 +664,42 @@ def show_comprehensive_analysis_page_parallel():
     </style>
     """, unsafe_allow_html=True)
     
-    if can_generate:
-        # Check analysis status
-        analysis_status = st.session_state.get('analysis_status', 'not_started')
+    # Show insufficient data warning if needed
+    if not can_generate:
+        st.warning(f"⚠️ Insufficient data for analysis")
+        st.info("You need at least 5 books with 3 rated books to generate comprehensive analysis.")
+    
+    # Show all 4 tabs with placeholder content for insufficient data or not started
+    if not can_generate or (can_generate and st.session_state.get('analysis_status', 'not_started') == "not_started"):
+        tab1, tab2, tab3, tab4 = st.tabs([
+            "😂  ROAST ME  😂", 
+            "👤  PERSONAL PROFILE  👤", 
+            "📚  RECOMMENDATIONS  📚", 
+            "📖  LITERARY INSIGHTS  📖"
+        ])
         
-        if analysis_status == "not_started":
-            # Show all 4 tabs with placeholder content
-            tab1, tab2, tab3, tab4 = st.tabs([
-                "😂  ROAST ME  😂", 
-                "👤  PERSONAL PROFILE  👤", 
-                "📚  RECOMMENDATIONS  📚", 
-                "📖  LITERARY INSIGHTS  📖"
-            ])
-            
-            with tab1:
-                st.info("🔄 **Pending Analysis**")
-                st.write("Your humorous literary roast will appear here once analysis begins.")
-                st.write("This will include witty observations about your reading habits and personality!")
-            
-            with tab2:
-                st.info("🔄 **Pending Analysis**")
-                st.write("Your personal profile analysis will appear here once analysis begins.")
-                st.write("This will include deep insights about your personality, demographics, and reading psychology!")
-            
-            with tab3:
-                st.info("🔄 **Pending Analysis**")
-                st.write("Your personalized book recommendations will appear here once analysis begins.")
-                st.write("This will include curated book suggestions based on your reading history!")
-            
-            with tab4:
-                st.info("🔄 **Pending Analysis**")
-                st.write("Your literary psychology insights will appear here once analysis begins.")
-                st.write("This will include deep analysis of your reading patterns and psychological profile!")
-            
-            # Generate button
+        with tab1:
+            st.info("🔄 **Pending Analysis**")
+            st.write("Your humorous literary roast will appear here once analysis begins.")
+            st.write("This will include witty observations about your reading habits and personality!")
+        
+        with tab2:
+            st.info("🔄 **Pending Analysis**")
+            st.write("Your personal profile analysis will appear here once analysis begins.")
+            st.write("This will include deep insights about your personality, demographics, and reading psychology!")
+        
+        with tab3:
+            st.info("🔄 **Pending Analysis**")
+            st.write("Your personalized book recommendations will appear here once analysis begins.")
+            st.write("This will include curated book suggestions based on your reading history!")
+        
+        with tab4:
+            st.info("🔄 **Pending Analysis**")
+            st.write("Your literary psychology insights will appear here once analysis begins.")
+            st.write("This will include deep analysis of your reading patterns and psychological profile!")
+        
+        # Generate button (only show if can_generate)
+        if can_generate:
             st.markdown("---")
             if st.button("🔮 Start Analysis", type="primary", use_container_width=True):
                 st.session_state.analysis_status = "processing"
@@ -705,8 +707,12 @@ def show_comprehensive_analysis_page_parallel():
                 st.session_state.pop('analysis_processing_started', None)
                 st.session_state.pop('last_refresh', None)
                 st.rerun()
+    
+    elif can_generate:
+        # Check analysis status
+        analysis_status = st.session_state.get('analysis_status', 'not_started')
         
-        elif analysis_status == "processing":
+        if analysis_status == "processing":
             # Show processing state
             st.info("🔄 **Processing your comprehensive analysis...**")
             st.info("⏱️ **AI processing may take up to 2 minutes** - please be patient!")
