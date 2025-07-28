@@ -143,12 +143,29 @@ def show_upload_page():
         # Simple instructions for getting CSV
         with st.expander("📋 How to get your Goodreads CSV file", expanded=False):
             st.markdown("""
-            **Getting your Goodreads data is easy:**
-            1. Go to [Goodreads My Books](https://www.goodreads.com/review/import)
-            2. Click **"Export Library"** button
-            3. Wait for the file to generate (may take a few minutes)
-            4. Download the CSV file
-            5. Upload it here!
+            **📚 Getting your Goodreads data is easy! Follow these steps:**
+            
+            ### Step 1: Sign in to Goodreads
+            1. Go to [Goodreads.com](https://www.goodreads.com) and sign in to your account
+            2. If you don't have an account, create one first
+            
+            ### Step 2: Export Your Library
+            1. Click on **"My Books"** in the top navigation
+            2. Look for the **"Import/Export"** link (usually in the left sidebar)
+            3. Click **"Export Library"** button
+            4. Wait for the file to generate (this may take a few minutes)
+            
+            ### Step 3: Download the File
+            1. Once ready, click **"Download"** to save the CSV file
+            2. The file will be named something like `goodreads_library_export.csv`
+            3. Save it somewhere you can easily find (like your Desktop)
+            
+            ### Step 4: Upload Here
+            1. Come back to this page
+            2. Click **"Browse files"** or drag and drop your CSV file
+            3. Click **"Import & Process Data"** to analyze your reading!
+            
+            **💡 Tip:** If you have a large library, the export might take 5-10 minutes to generate. Be patient!
             """)
             
     with col2:
