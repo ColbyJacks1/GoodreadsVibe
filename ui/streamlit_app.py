@@ -96,7 +96,7 @@ def main():
     else:
         default_index = 0
     
-    page = st.sidebar.selectbox(
+    page = st.sidebar.radio(
         "Choose a section:",
         main_pages,
         index=default_index
