@@ -739,6 +739,40 @@ def show_profile_analysis_page():
 
 
 def show_comprehensive_analysis_page_parallel():
+    # Force complete visual reset with CSS to prevent content bleed
+    st.markdown("""
+    <style>
+    .main > div {
+        background-color: white !important;
+    }
+    .stApp > div {
+        background-color: white !important;
+    }
+    div[data-testid="stVerticalBlock"] {
+        background-color: white !important;
+    }
+    .element-container {
+        background-color: white !important;
+    }
+    /* Hide any plotly charts that might be bleeding through */
+    .js-plotly-plot {
+        display: none !important;
+    }
+    .plotly {
+        display: none !important;
+    }
+    </style>
+    <script>
+    // Clear any lingering plotly elements
+    setTimeout(function() {
+        var plots = document.querySelectorAll('.js-plotly-plot, .plotly');
+        plots.forEach(function(plot) {
+            plot.style.display = 'none';
+        });
+    }, 100);
+    </script>
+    """, unsafe_allow_html=True)
+    
     # Clear previous page content completely
     with st.container():
         st.markdown("")  # Force content clear
@@ -830,7 +864,7 @@ def show_comprehensive_analysis_page_parallel():
             # Show all 4 tabs with processing placeholders
             tab1, tab2, tab3, tab4 = st.tabs([
                 "😂  ROAST ME  😂", 
-                "📚  RECOMMENDATIONS  📚", 
+                "��  RECOMMENDATIONS  📚", 
                 "👤  PERSONAL PROFILE  👤", 
                 "📖  LITERARY INSIGHTS  📖"
             ])
