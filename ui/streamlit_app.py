@@ -684,34 +684,6 @@ def show_comprehensive_analysis_page_parallel():
                         st.session_state.pop("analysis_processing_started", None)
                 st.rerun()
             
-            # After quick analysis is completed, trigger comprehensive analysis
-            elif st.session_state.get('analysis_status') == "quick_completed" and 'comprehensive_analysis_started' not in st.session_state:
-                st.session_state.comprehensive_analysis_started = True
-                with st.spinner("Generating comprehensive analysis (insights + profile)..."):
-                    try:
-                        from app.comprehensive_analysis import comprehensive_analyzer
-                        comprehensive_result = comprehensive_analyzer.generate_comprehensive_analysis_parallel()
-                        if comprehensive_result.get("success"):
-                            st.session_state.comprehensive_analysis_sections_parallel = comprehensive_result.get("parsed_sections", {})
-                            # Combine sections
-                            all_sections = {}
-                            all_sections.update(st.session_state.get("quick_analysis_sections", {}))
-                            all_sections.update(st.session_state.get("comprehensive_analysis_sections_parallel", {}))
-                            st.session_state.comprehensive_analysis_sections = all_sections
-                            st.session_state.analysis_status = "completed"
-                        else:
-                            st.warning(f"⚠️ Comprehensive analysis failed: {comprehensive_result.get('error')}")
-                            # Still show quick analysis results
-                            st.session_state.comprehensive_analysis_sections = st.session_state.get("quick_analysis_sections", {})
-                            st.session_state.analysis_status = "completed"
-                    except Exception as e:
-                        st.warning(f"⚠️ Comprehensive analysis failed: {str(e)}")
-                        # Still show quick analysis results
-                        st.session_state.comprehensive_analysis_sections = st.session_state.get("quick_analysis_sections", {})
-                        st.session_state.analysis_status = "completed"
-                    finally:
-                        st.session_state.pop("comprehensive_analysis_started", None)
-                st.rerun()            
             # Auto-refresh every 3 seconds to check if complete
             import time
             # Check if we should auto-refresh (every 3 seconds)
@@ -726,6 +698,35 @@ def show_comprehensive_analysis_page_parallel():
                 # Show refresh button as alternative
                 if st.button("🔄 Check Status"):
                     st.rerun()
+        
+        # After quick analysis is completed, trigger comprehensive analysis
+        if st.session_state.get('analysis_status') == "quick_completed" and 'comprehensive_analysis_started' not in st.session_state:
+            st.session_state.comprehensive_analysis_started = True
+            with st.spinner("Generating comprehensive analysis (insights + profile)..."):
+                try:
+                    from app.comprehensive_analysis import comprehensive_analyzer
+                    comprehensive_result = comprehensive_analyzer.generate_comprehensive_analysis_parallel()
+                    if comprehensive_result.get("success"):
+                        st.session_state.comprehensive_analysis_sections_parallel = comprehensive_result.get("parsed_sections", {})
+                        # Combine sections
+                        all_sections = {}
+                        all_sections.update(st.session_state.get("quick_analysis_sections", {}))
+                        all_sections.update(st.session_state.get("comprehensive_analysis_sections_parallel", {}))
+                        st.session_state.comprehensive_analysis_sections = all_sections
+                        st.session_state.analysis_status = "completed"
+                    else:
+                        st.warning(f"⚠️ Comprehensive analysis failed: {comprehensive_result.get('error')}")
+                        # Still show quick analysis results
+                        st.session_state.comprehensive_analysis_sections = st.session_state.get("quick_analysis_sections", {})
+                        st.session_state.analysis_status = "completed"
+                except Exception as e:
+                    st.warning(f"⚠️ Comprehensive analysis failed: {str(e)}")
+                    # Still show quick analysis results
+                    st.session_state.comprehensive_analysis_sections = st.session_state.get("quick_analysis_sections", {})
+                    st.session_state.analysis_status = "completed"
+                finally:
+                    st.session_state.pop("comprehensive_analysis_started", None)
+            st.rerun()
         
         elif analysis_status == "quick_completed":
             # Show quick analysis results while comprehensive is running
