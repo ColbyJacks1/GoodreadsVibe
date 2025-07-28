@@ -761,13 +761,45 @@ def show_comprehensive_analysis_page_parallel():
     .plotly {
         display: none !important;
     }
+    /* Hide any metrics, headers, and text from previous pages */
+    .stMetric {
+        display: none !important;
+    }
+    h1:not(:last-child), h2:not(:last-child), h3:not(:last-child) {
+        display: none !important;
+    }
+    /* Hide specific Stats page elements */
+    div[data-testid="metric-container"] {
+        display: none !important;
+    }
+    .stSelectbox {
+        display: none !important;
+    }
+    /* Only show content after the Analyze Me header */
+    .main .block-container > div:not(:last-of-type) {
+        display: none !important;
+    }
     </style>
     <script>
-    // Clear any lingering plotly elements
+    // Clear any lingering plotly elements and text
     setTimeout(function() {
         var plots = document.querySelectorAll('.js-plotly-plot, .plotly');
         plots.forEach(function(plot) {
             plot.style.display = 'none';
+        });
+        
+        // Hide any metric containers or stat elements
+        var metrics = document.querySelectorAll('.stMetric, [data-testid="metric-container"]');
+        metrics.forEach(function(metric) {
+            metric.style.display = 'none';
+        });
+        
+        // Hide any headers that aren't the current page
+        var headers = document.querySelectorAll('h1, h2, h3');
+        headers.forEach(function(header) {
+            if (!header.textContent.includes('Analyze Me')) {
+                header.style.display = 'none';
+            }
         });
     }, 100);
     </script>
@@ -864,7 +896,7 @@ def show_comprehensive_analysis_page_parallel():
             # Show all 4 tabs with processing placeholders
             tab1, tab2, tab3, tab4 = st.tabs([
                 "😂  ROAST ME  😂", 
-                "��  RECOMMENDATIONS  📚", 
+                "📚  RECOMMENDATIONS  📚", 
                 "👤  PERSONAL PROFILE  👤", 
                 "📖  LITERARY INSIGHTS  📖"
             ])
