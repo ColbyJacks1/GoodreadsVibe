@@ -58,6 +58,7 @@ Create a concise bullet-point summary with 2-4 key insights per category:
 - Life arc: [brief inference]
 
 ## DETAILED ANALYSIS
+
 Below the summary, provide your full comprehensive analysis with clear headings for each dimension. For each inference:
 - State your conclusion clearly
 - Provide specific evidence from their reading data
