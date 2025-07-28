@@ -47,10 +47,10 @@ def show_quick_navigation():
             st.rerun()
     
     with col3:
-        if st.button("🔮 Comprehensive Analysis",
+        if st.button("🔮 Analyze Me",
                     help="Get deep insights and recommendations",
                     use_container_width=True):
-            st.session_state.selected_page = "🔮 Comprehensive Analysis"
+            st.session_state.selected_page = "🔮 Analyze Me"
             st.rerun()
 
 
@@ -87,7 +87,7 @@ def main():
     main_pages = [
         "📤 Upload", 
         "📊 Books and Stats", 
-        "🔮 Comprehensive Analysis"
+        "🔮 Analyze Me"
     ]
     
     # Check if page was selected via main buttons
@@ -112,7 +112,7 @@ def main():
         show_upload_page()
     elif page_clean == "Books and Stats":
         show_books_and_stats_page()
-    elif page_clean == "Comprehensive Analysis":
+    elif page_clean == "Analyze Me":
         show_comprehensive_analysis_page_parallel()
 
 def show_upload_page():
@@ -632,7 +632,7 @@ def show_profile_analysis_page():
 
 
 def show_comprehensive_analysis_page_parallel():
-    st.header("🔮 Comprehensive Analysis")
+    st.header("🔮 Analyze Me")
     
     # Get user data
     user_books = session_db_manager.get_user_books()
