@@ -10,19 +10,7 @@ import tempfile
 import sys
 from pathlib import Path
 
-# Add the app directory to the Python path so we can import modules
-app_dir = Path(__file__).parent.parent / "app"
-sys.path.insert(0, str(app_dir))
-
 # Import backend modules directly
-from app.ingest import ingester
-from app.enrich import enricher
-from app.cluster import clusterer
-from app.insights import insights_generator
-from app.profile_insights import profile_insights_generator
-from app.recommend import recommender
-from app.comprehensive_analysis import comprehensive_analyzer
-from app.db import db_manager
 from app.session_db import session_db_manager
 
 
@@ -423,47 +411,115 @@ def generate_simple_insights(user_books, user_stats):
     return "\n\n".join(insights)
 
 
+def generate_simple_profile_analysis(user_books, user_stats):
+    """Generate simple profile analysis for session-based data."""
+    if not user_books:
+        return "No books available for profile analysis."
+    
+    try:
+        # Basic profile analysis based on available data
+        total_books = len(user_books)
+        rated_books = [book for book in user_books if book.get('rating') and book['rating'] > 0]
+        avg_rating = sum(book['rating'] for book in rated_books) / len(rated_books) if rated_books else 0
+        
+        profile = f"""
+## 👤 Your Reading Profile
+
+### 📊 **Reading Statistics**
+- **Total Books**: {total_books}
+- **Rated Books**: {len(rated_books)}
+- **Average Rating**: {avg_rating:.1f}/5.0
+
+### 🎯 **Reading Preferences**
+"""
+        
+        if rated_books:
+            # Genre preferences
+            genres = {}
+            for book in rated_books:
+                genre = book.get('genre', 'Unknown')
+                if genre not in genres:
+                    genres[genre] = []
+                genres[genre].append(book['rating'])
+            
+            if genres:
+                profile += "\n**Your Favorite Genres:**\n"
+                genre_ratings = [(genre, sum(ratings)/len(ratings)) for genre, ratings in genres.items()]
+                genre_ratings.sort(key=lambda x: x[1], reverse=True)
+                
+                for genre, rating in genre_ratings[:5]:
+                    profile += f"- **{genre}**: {rating:.1f}/5.0\n"
+            
+            # Rating distribution
+            rating_counts = {}
+            for book in rated_books:
+                rating = int(book['rating'])
+                rating_counts[rating] = rating_counts.get(rating, 0) + 1
+            
+            profile += "\n**Your Rating Distribution:**\n"
+            for rating in sorted(rating_counts.keys(), reverse=True):
+                count = rating_counts[rating]
+                profile += f"- **{rating} stars**: {count} books\n"
+        
+        profile += "\n### 💡 **Profile Insights**\n"
+        profile += "- Your reading profile shows your preferences\n"
+        profile += "- Upload more books for deeper analysis\n"
+        profile += "- Rate your books to get better insights\n"
+        
+        return profile
+        
+    except Exception as e:
+        return f"Error generating profile analysis: {str(e)}"
+
+
 def show_profile_analysis_page():
     st.header("👤 Personal Profile Analysis")
     
+    # Get user data
+    user_books = session_db_manager.get_user_books()
+    user_stats = st.session_state.user_stats
+    
     # Check if profile insights can be generated
-    profile_stats = {"success": True, "stats": profile_insights_generator.get_profile_insights_stats()}
-    if profile_stats and profile_stats.get('success'):
-        stats = profile_stats['stats']
+    total_books = user_stats.get('total_books', 0)
+    books_with_ratings = user_stats.get('books_with_ratings', 0)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Total Books", total_books)
+    with col2:
+        st.metric("Books with Ratings", books_with_ratings)
+    
+    can_generate = total_books >= 10 and books_with_ratings >= 5
+    
+    if can_generate:
+        # Add Clear Profile Insights button
+        if 'profile_insights_result' in st.session_state:
+            if st.button("🧹 Clear Profile Analysis"):
+                st.session_state.pop('profile_insights_result', None)
+                st.rerun()
         
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("Total Books", stats.get('total_books', 0))
-        with col2:
-            st.metric("Books with Ratings", stats.get('books_with_ratings', 0))
+        # Show stored profile insights if present
+        if 'profile_insights_result' in st.session_state:
+            st.success("✨ Profile analysis completed successfully!")
+            if 'profile_insights_result' in st.session_state and st.session_state['profile_insights_result']:
+                st.subheader("👤 Your Personal Profile")
+                st.markdown(st.session_state['profile_insights_result'])
+            else:
+                st.warning("No profile analysis available.")
         
-        if stats.get('can_generate_profile'):
-            # Add Clear Profile Insights button
-            if 'profile_insights_result' in st.session_state:
-                if st.button("🧹 Clear Profile Analysis"):
-                    st.session_state.pop('profile_insights_result', None)
+        # Generate Profile Analysis button
+        if st.button("🔍 Analyze My Profile"):
+            with st.spinner("Analyzing your reading patterns for personal insights..."):
+                try:
+                    # Generate simple profile analysis using session data
+                    profile_analysis = generate_simple_profile_analysis(user_books, user_stats)
+                    st.session_state['profile_insights_result'] = profile_analysis
                     st.rerun()
-            
-            # Show stored profile insights if present
-            if 'profile_insights_result' in st.session_state:
-                st.success("✨ Profile analysis completed successfully!")
-                if 'profile_insights_result' in st.session_state and st.session_state['profile_insights_result']:
-                    st.subheader("👤 Your Personal Profile")
-                    st.markdown(st.session_state['profile_insights_result'])
-                else:
-                    st.warning("No profile analysis available.")
-            
-            # Generate Profile Analysis button
-            if st.button("🔍 Analyze My Profile"):
-                with st.spinner("Analyzing your reading patterns for personal insights..."):
-                    result = profile_insights_generator.generate_profile_insights()
-                    if result and result.get('success'):
-                        st.session_state['profile_insights_result'] = result['profile_insights']
-                        st.session_state['profile_insights_data_summary'] = result.get('data_summary', {})
-                        st.rerun()
-        else:
-            st.warning(f"⚠️ {stats.get('reason', 'Insufficient data for profile analysis')}")
-            st.info("You need at least 10 books with 5 rated books to generate a profile analysis.")
+                except Exception as e:
+                    st.error(f"❌ Profile analysis failed: {str(e)}")
+    else:
+        st.warning("⚠️ Insufficient data for profile analysis")
+        st.info("You need at least 10 books with 5 rated books to generate a profile analysis.")
 
 
 def show_comprehensive_analysis_page():
