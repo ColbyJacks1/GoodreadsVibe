@@ -152,8 +152,9 @@ def show_upload_page():
             ### Step 2: Export Your Library
             1. Click on **"My Books"** in the top navigation
             2. Look for the **"Import/Export"** link (usually in the left sidebar)
-            3. Click **"Export Library"** button
-            4. Wait for the file to generate (this may take a few minutes)
+            3. **Or go directly to:** [Goodreads Import/Export Page](https://www.goodreads.com/review/import)
+            4. Click **"Export Library"** button
+            5. Wait for the file to generate (this may take a few minutes)
             
             ### Step 3: Download the File
             1. Once ready, click **"Download"** to save the CSV file
