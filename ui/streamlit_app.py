@@ -804,19 +804,6 @@ def show_comprehensive_analysis_page_parallel():
             st.info("🔄 **Processing your comprehensive analysis...**")
             st.info("⏱️ **AI processing may take up to 2 minutes** - please be patient!")
             
-            # Show progress and estimated time
-            if 'analysis_start_time' in st.session_state:
-                import time
-                elapsed = datetime.now() - st.session_state.analysis_start_time
-                elapsed_seconds = int(elapsed.total_seconds())
-                st.write(f"⏱️ Processing time: {elapsed_seconds} seconds")
-
-            
-            st.write("📚 Analyzing your reading patterns...")
-            st.write("🧠 Generating psychological insights...")
-            st.write("💡 Creating personalized recommendations...")
-            st.write("😂 Preparing your literary roast...")
-            
             # Show all 4 tabs with processing placeholders
             tab1, tab2, tab3, tab4 = st.tabs([
                 "😂  ROAST ME  😂", 
