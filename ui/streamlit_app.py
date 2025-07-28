@@ -146,9 +146,6 @@ def show_upload_page():
         st.button("🚀 Import & Process Data", type="primary", use_container_width=True, disabled=True)
     
     if uploaded_file is not None:
-        # Show file preview and success message
-        st.success(f"✅ **File uploaded:** {uploaded_file.name} ({uploaded_file.size / 1024:.1f} KB)")
-        
         # Smart button state: Enable only when file is uploaded
         if st.button("🚀 Import & Process Data", type="primary", use_container_width=True):
             with st.spinner("Processing your Goodreads data..."):
@@ -308,22 +305,25 @@ def show_upload_page():
             """)
             
     with col2:
-        if st.button("🗑️ Clear My Data", type="secondary"):
-            with st.spinner("Clearing your data..."):
-                try:
-                    # Clear session data for this user
-                    session_db_manager.clear_user_books()
-                    st.session_state.user_stats = {
-                        'total_books': 0,
-                        'processed_books': 0,
-                        'enriched_books': 0,
-                        'books_with_ratings': 0,
-                        'average_rating': 0.0
-                    }
-                    st.success("✅ Your data cleared successfully!")
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"❌ Failed to clear data: {str(e)}")
+        # Only show Clear My Data button if there's actual data to clear
+        user_stats = st.session_state.get('user_stats', {})
+        if user_stats.get('total_books', 0) > 0:
+            if st.button("🗑️ Clear My Data", type="secondary"):
+                with st.spinner("Clearing your data..."):
+                    try:
+                        # Clear session data for this user
+                        session_db_manager.clear_user_books()
+                        st.session_state.user_stats = {
+                            'total_books': 0,
+                            'processed_books': 0,
+                            'enriched_books': 0,
+                            'books_with_ratings': 0,
+                            'average_rating': 0.0
+                        }
+                        st.success("✅ Your data cleared successfully!")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"❌ Failed to clear data: {str(e)}")
 
     # Quick navigation at bottom
     show_quick_navigation()
