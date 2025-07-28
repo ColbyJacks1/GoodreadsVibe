@@ -28,30 +28,36 @@ def sqlmodel_to_dict(obj):
 
 
 def show_quick_navigation():
-    """Show quick navigation buttons at bottom of page."""
+    """Show quick navigation buttons at the bottom of pages."""
     st.markdown("---")
-    st.markdown("### 🚀 Quick Navigation")
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        if st.button("📤 Upload & Process", 
-                    use_container_width=True, 
-                    help="Upload your Goodreads CSV file"):
-            st.session_state.selected_page = "📤 Upload & Process"
+        if st.button("📤 Upload",
+                    help="Upload your Goodreads CSV file",
+                    use_container_width=True):
+            st.session_state.selected_page = "📤 Upload"
             st.rerun()
     
     with col2:
-        if st.button("📊 Dashboard", 
-                    use_container_width=True, 
-                    help="View your reading statistics"):
-            st.session_state.selected_page = "📊 Dashboard"
+        if st.button("📊 Books and Stats",
+                    help="View your reading statistics and visualizations",
+                    use_container_width=True):
+            st.session_state.selected_page = "📊 Books and Stats"
             st.rerun()
     
     with col3:
-        if st.button("🔮 Comprehensive Analysis", 
-                    use_container_width=True, 
-                    help="Get AI-powered insights"):
+        if st.button("🔮 Comprehensive Analysis",
+                    help="Get deep insights and recommendations",
+                    use_container_width=True):
             st.session_state.selected_page = "🔮 Comprehensive Analysis"
+            st.rerun()
+    
+    with col4:
+        if st.button("📚 Individual Analysis",
+                    help="Analyze specific aspects of your reading",
+                    use_container_width=True):
+            st.session_state.selected_page = "📚 Individual Analysis"
             st.rerun()
 
 
@@ -86,9 +92,10 @@ def main():
     
     # Simple list of all pages
     all_pages = [
-        "📤 Upload & Process", 
-        "📊 Dashboard", 
+        "📤 Upload", 
+        "📊 Books and Stats", 
         "🔮 Comprehensive Analysis", 
+        "📚 Individual Analysis", 
         "🧠 Insights", 
         "👤 Profile Analysis", 
         "📚 Recommendations"
@@ -112,13 +119,13 @@ def main():
     # Clean up page names for routing
     page_clean = page.split(" ", 1)[1] if " " in page else page
     
-    if page_clean == "Upload & Process":
+    if page_clean == "Upload":
         show_upload_page()
-    elif page_clean == "Dashboard":
-        show_dashboard_page()
+    elif page_clean == "Books and Stats":
+        show_books_and_stats_page()
     elif page_clean == "Comprehensive Analysis":
         show_comprehensive_analysis_page_parallel()
-    elif page_clean == "Insights":
+    elif page_clean == "Individual Analysis":
         show_insights_page()
     elif page_clean == "Profile Analysis":
         show_profile_analysis_page()
@@ -286,6 +293,11 @@ def show_upload_page():
                         # Note: Actual processing will happen when user navigates to the page
                         # due to Streamlit's architecture
                     
+                    # Automatically navigate to Books and Stats after successful upload
+                    st.session_state.selected_page = "📊 Books and Stats"
+                    st.success("✅ Data uploaded successfully! Redirecting to Books and Stats...")
+                    st.rerun()
+                    
                 except Exception as e:
                     st.error(f"❌ Error processing data: {str(e)}")
                 finally:
@@ -295,8 +307,8 @@ def show_upload_page():
     # Quick navigation at bottom
     show_quick_navigation()
 
-def show_dashboard_page():
-    st.header("📊 Dashboard")
+def show_books_and_stats_page():
+    st.header("📊 Books and Stats")
     
     # Get user stats
     user_stats = st.session_state.user_stats
@@ -632,17 +644,6 @@ def show_comprehensive_analysis_page_parallel():
     books_with_ratings = user_stats.get('books_with_ratings', 0)
     
     can_generate = total_books >= 5 and books_with_ratings >= 3
-    
-    # Debug information
-    st.write(f"🔍 Debug: Analysis status = {st.session_state.get('analysis_status', 'not_started')}")
-    st.write(f"🔍 Debug: Processing started = {'analysis_processing_started' in st.session_state}")
-    st.write(f"🔍 Debug: Comprehensive started = {'comprehensive_analysis_started' in st.session_state}")
-    st.write(f"🔍 Debug: Quick completed = {st.session_state.get('quick_analysis_completed', False)}")
-    st.write(f"🔍 Debug: Comprehensive completed = {st.session_state.get('comprehensive_analysis_completed', False)}")
-    if 'quick_analysis_sections' in st.session_state:
-        st.write(f"🔍 Debug: Quick sections = {list(st.session_state['quick_analysis_sections'].keys())}")
-    if 'comprehensive_analysis_sections_parallel' in st.session_state:
-        st.write(f"🔍 Debug: Comprehensive sections = {list(st.session_state['comprehensive_analysis_sections_parallel'].keys())}")
     
     if can_generate:
         # Check analysis status
