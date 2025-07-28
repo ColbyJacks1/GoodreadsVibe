@@ -817,6 +817,30 @@ def show_comprehensive_analysis_page_parallel():
             st.write("💡 Creating personalized recommendations...")
             st.write("😂 Preparing your literary roast...")
             
+            # Show all 4 tabs with processing placeholders
+            tab1, tab2, tab3, tab4 = st.tabs([
+                "😂  ROAST ME  😂", 
+                "👤  PERSONAL PROFILE  👤", 
+                "📚  RECOMMENDATIONS  📚", 
+                "📖  LITERARY INSIGHTS  📖"
+            ])
+            
+            with tab1:
+                st.info("🔄 **Processing...**")
+                st.write("Your literary roast is being generated...")
+            
+            with tab2:
+                st.info("🔄 **Processing...**")
+                st.write("Your personal profile is being analyzed...")
+            
+            with tab3:
+                st.info("🔄 **Processing...**")
+                st.write("Your recommendations are being created...")
+            
+            with tab4:
+                st.info("🔄 **Processing...**")
+                st.write("Your literary insights are being generated...")
+            
             # Trigger actual processing - use progressive display approach
             if 'analysis_processing_started' not in st.session_state:
                 st.session_state.analysis_processing_started = True
@@ -861,13 +885,15 @@ def show_comprehensive_analysis_page_parallel():
             st.success("✅ Quick analysis completed! Comprehensive analysis in progress...")
             st.info("⏱️ **AI processing may take up to 2 minutes** - please be patient!")
             
-            # Show quick analysis results FIRST (immediate display)
+            # Show all 4 tabs with quick results in first 2, processing in last 2
             if 'quick_analysis_sections' in st.session_state:
                 sections = st.session_state['quick_analysis_sections']
                 
-                tab1, tab2 = st.tabs([
+                tab1, tab2, tab3, tab4 = st.tabs([
                     "😂  ROAST ME  😂", 
-                    "📚  RECOMMENDATIONS  📚"
+                    "👤  PERSONAL PROFILE  👤", 
+                    "📚  RECOMMENDATIONS  📚", 
+                    "📖  LITERARY INSIGHTS  📖"
                 ])
                 
                 with tab1:
@@ -877,54 +903,60 @@ def show_comprehensive_analysis_page_parallel():
                         st.warning("No humorous analysis available.")
                 
                 with tab2:
+                    st.info("🔄 **Processing...**")
+                    st.write("Your personal profile is being analyzed...")
+                
+                with tab3:
                     if sections.get('recommendations'):
                         st.markdown(sections['recommendations'])
                     else:
                         st.warning("No recommendations available.")
                 
-                st.info("🔄 Comprehensive analysis (insights + profile) still in progress...")
-            
-            # Start comprehensive analysis if not already started (separate from display)
-            if 'comprehensive_analysis_started' not in st.session_state:
-                st.session_state.comprehensive_analysis_started = True
-                # Run comprehensive analysis in background without blocking UI
-                try:
-                    from app.comprehensive_analysis import comprehensive_analyzer
-                    comprehensive_result = comprehensive_analyzer.generate_comprehensive_analysis_parallel()
-                    if comprehensive_result.get("success"):
-                        st.session_state.comprehensive_analysis_sections_parallel = comprehensive_result.get("parsed_sections", {})
-                        # Combine sections
-                        all_sections = {}
-                        all_sections.update(st.session_state.get("quick_analysis_sections", {}))
-                        all_sections.update(st.session_state.get("comprehensive_analysis_sections_parallel", {}))
-                        st.session_state.comprehensive_analysis_sections = all_sections
-                        st.session_state.analysis_status = "completed"
-                    else:
-                        st.warning(f"⚠️ Comprehensive analysis failed: {comprehensive_result.get('error')}")
+                with tab4:
+                    st.info("🔄 **Processing...**")
+                    st.write("Your literary insights are being generated...")
+                
+                # Start comprehensive analysis if not already started (separate from display)
+                if 'comprehensive_analysis_started' not in st.session_state:
+                    st.session_state.comprehensive_analysis_started = True
+                    # Run comprehensive analysis in background without blocking UI
+                    try:
+                        from app.comprehensive_analysis import comprehensive_analyzer
+                        comprehensive_result = comprehensive_analyzer.generate_comprehensive_analysis_parallel()
+                        if comprehensive_result.get("success"):
+                            st.session_state.comprehensive_analysis_sections_parallel = comprehensive_result.get("parsed_sections", {})
+                            # Combine sections
+                            all_sections = {}
+                            all_sections.update(st.session_state.get("quick_analysis_sections", {}))
+                            all_sections.update(st.session_state.get("comprehensive_analysis_sections_parallel", {}))
+                            st.session_state.comprehensive_analysis_sections = all_sections
+                            st.session_state.analysis_status = "completed"
+                        else:
+                            st.warning(f"⚠️ Comprehensive analysis failed: {comprehensive_result.get('error')}")
+                            # Still show quick analysis results
+                            st.session_state.comprehensive_analysis_sections = st.session_state.get("quick_analysis_sections", {})
+                            st.session_state.analysis_status = "completed"
+                    except Exception as e:
+                        st.warning(f"⚠️ Comprehensive analysis failed: {str(e)}")
                         # Still show quick analysis results
                         st.session_state.comprehensive_analysis_sections = st.session_state.get("quick_analysis_sections", {})
                         st.session_state.analysis_status = "completed"
-                except Exception as e:
-                    st.warning(f"⚠️ Comprehensive analysis failed: {str(e)}")
-                    # Still show quick analysis results
-                    st.session_state.comprehensive_analysis_sections = st.session_state.get("quick_analysis_sections", {})
-                    st.session_state.analysis_status = "completed"
-                finally:
-                    st.session_state.pop("comprehensive_analysis_started", None)
-                st.rerun()
-            
-            # Auto-refresh to check for comprehensive completion
-            import time
-            current_time = time.time()
-            if 'last_refresh' not in st.session_state:
-                st.session_state.last_refresh = current_time
-            
-            if current_time - st.session_state.last_refresh > 3:
-                st.session_state.last_refresh = current_time
-                st.rerun()
-            else:
-                if st.button("🔄 Check Status"):
+                    finally:
+                        st.session_state.pop("comprehensive_analysis_started", None)
                     st.rerun()
+                
+                # Auto-refresh to check for comprehensive completion
+                import time
+                current_time = time.time()
+                if 'last_refresh' not in st.session_state:
+                    st.session_state.last_refresh = current_time
+                
+                if current_time - st.session_state.last_refresh > 3:
+                    st.session_state.last_refresh = current_time
+                    st.rerun()
+                else:
+                    if st.button("🔄 Check Status"):
+                        st.rerun()
         
         elif analysis_status == "completed":
             # Show completed analysis
