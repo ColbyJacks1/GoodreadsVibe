@@ -109,9 +109,6 @@ The system generates insights like:
 
 ### Backend (FastAPI)
 - **Database**: SQLite with SQLModel ORM
-
-- **Clustering**: K-means with silhouette score optimization
-- **Dimensionality Reduction**: UMAP for 2D visualization
 - **LLM**: Google Gemini for insights generation
 
 ### Frontend (Streamlit)
@@ -122,7 +119,7 @@ The system generates insights like:
 
 ### Data Flow
 ```
-Goodreads CSV → Ingestion → Enrichment → Clustering → Insights
+Goodreads CSV → Ingestion → Enrichment → Insights
 ```
 
 ## 📊 API Endpoints
@@ -141,8 +138,6 @@ Goodreads CSV → Ingestion → Enrichment → Clustering → Insights
 ### Statistics
 - `GET /stats/ingestion` - Ingestion statistics
 - `GET /stats/enrichment` - Enrichment statistics
-
-- `GET /stats/clustering` - Clustering statistics
 - `GET /stats/insights` - Insights generation statistics
 
 ### Data Access
@@ -198,8 +193,6 @@ LOG_LEVEL=INFO
 ### Acceptance Criteria Met
 - ✅ **Ingest 5,000-row CSV < 60s**
 - ✅ **/insights returns ≤ 800 tokens, p95 < 3s**
-- ✅ **Cluster scatter uses UMAP coordinates**
-- ✅ **"Why this rec?" tooltips show cosine score + keywords**
 
 ### Benchmarks
 - **CSV Processing**: ~50 books/second

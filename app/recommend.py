@@ -83,18 +83,18 @@ Return a JSON object with this structure:
 
 Focus on providing thoughtful, personalized recommendations based on the user's specific interests and reading history."""
 
-    def _format_reading_history(self, books: List[Any]) -> str:
-        """Format reading history for LLM context."""
+    def _format_books(self, books: List[Any]) -> str:
+        """Format user's books for LLM context."""
         if not books:
-            return "No reading history available."
+            return "No books available."
         
         # Sort by rating (highest first) and date read (most recent first)
         sorted_books = sorted(books, 
                              key=lambda x: (x.my_rating or 0, x.date_read or x.date_added), 
                              reverse=True)
         
-        history_lines = []
-        for book in sorted_books[:50]:  # Limit to top 50 books for context
+        book_lines = []
+        for book in sorted_books:
             rating = book.my_rating or "No rating"
             date = book.date_read or book.date_added
             date_str = date.strftime("%Y-%m-%d") if date else "Unknown date"
@@ -107,68 +107,33 @@ Focus on providing thoughtful, personalized recommendations based on the user's 
             if book.my_review:
                 line += f" - Review: {book.my_review[:100]}..."
             
-            history_lines.append(line)
-        
-        return "\n".join(history_lines)
-
-    def _format_available_books(self, books: List[Any]) -> str:
-        """Format available books for LLM context."""
-        if not books:
-            return "No books available for recommendations."
-        
-        # Sort by average rating and popularity
-        sorted_books = sorted(books, 
-                             key=lambda x: (x.average_rating or 0, x.year_published or 0), 
-                             reverse=True)
-        
-        book_lines = []
-        for book in sorted_books[:100]:  # Limit to top 100 books for context
-            line = f"- {book.title} by {book.author}"
-            
-            if book.average_rating:
-                line += f" (Rating: {book.average_rating})"
-            
-            if book.year_published:
-                line += f" ({book.year_published})"
-            
-            if book.genres:
-                line += f" [Genres: {book.genres}]"
-            
-            if book.description:
-                line += f" - {book.description[:150]}..."
-            
             book_lines.append(line)
         
         return "\n".join(book_lines)
 
     def _create_recommendation_context(self, query: str, limit: int = 10) -> str:
         """Create context for recommendation generation."""
-        # Get user's reading history (books they've read)
+        # Get user's books
         user_books = self.db.get_all_books()
         
-        # Get available books for recommendations (could be all books or a curated list)
-        available_books = self.db.get_all_books()  # For now, using all books
-        
         # Format the context
-        reading_history = self._format_reading_history(user_books)
-        available_books_text = self._format_available_books(available_books)
+        books_text = self._format_books(user_books)
         
         # Create the prompt
         prompt = self.prompt_template.format(
             query=query,
-            reading_history=reading_history,
-            available_books=available_books_text,
+            books=books_text,
             limit=limit
         )
         
         return prompt
 
-    def recommend_books(self, query: str, limit: int = 10) -> List[Dict[str, Any]]:
+    def recommend_books(self, query: str, limit: int = 10) -> Dict[str, Any]:
         """Generate personalized book recommendations using Gemini AI."""
         try:
             if not self.model:
                 logger.error("Gemini model not available. Cannot generate recommendations.")
-                return []
+                return {"error": "Gemini model not available", "recommendations": []}
             
             # Create recommendation context
             prompt = self._create_recommendation_context(query, limit)
@@ -178,48 +143,25 @@ Focus on providing thoughtful, personalized recommendations based on the user's 
             
             if not response.text:
                 logger.error("No response from Gemini model")
-                return []
+                return {"error": "No response from model", "recommendations": []}
             
-            # Parse the response
-            try:
-                result = json.loads(response.text)
-                recommendations = result.get("recommendations", [])
-                
-                # Validate and enhance recommendations
-                validated_recommendations = []
-                for rec in recommendations:
-                    if self._validate_recommendation(rec):
-                        # Add additional metadata
-                        book = self.db.get_book(rec.get("book_id", ""))
-                        if book:
-                            rec.update({
-                                "publisher": book.publisher,
-                                "year_published": book.year_published,
-                                "pages": book.pages,
-                                "average_rating": book.average_rating,
-                                "description": book.description,
-                                "subjects": book.subjects,
-                                "genres": book.genres
-                            })
-                        validated_recommendations.append(rec)
-                
-                # Log the interaction
-                self.db.add_llm_history(LLMHistoryCreate(
-                    prompt=f"Recommendation query: {query}",
-                    response=response.text,
-                    extra=json.dumps({"limit": limit, "recommendations_count": len(validated_recommendations)})
-                ))
-                
-                return validated_recommendations
-                
-            except json.JSONDecodeError as e:
-                logger.error(f"Failed to parse Gemini response as JSON: {e}")
-                # Fallback: try to extract recommendations from text
-                return self._extract_recommendations_from_text(response.text, limit)
+            # Log the interaction
+            self.db.add_llm_history(LLMHistoryCreate(
+                prompt=f"Recommendation query: {query}",
+                response=response.text,
+                extra=json.dumps({"limit": limit, "query": query})
+            ))
+            
+            return {
+                "success": True,
+                "recommendations": response.text,
+                "query": query,
+                "total_found": "Generated by LLM"
+            }
         
         except Exception as e:
             logger.error(f"Error generating recommendations: {str(e)}")
-            return []
+            return {"error": str(e), "recommendations": []}
 
     def _validate_recommendation(self, rec: Dict[str, Any]) -> bool:
         """Validate a recommendation has required fields."""
@@ -276,8 +218,8 @@ Book details:
 - Description: {target_book.description or 'No description available'}
 - Rating: {target_book.my_rating or 'No rating'}
 
-Available books:
-{self._format_available_books(self.db.get_all_books())}
+User's books:
+{self._format_books(self.db.get_all_books())}
 
 Find {limit} books that are most similar in terms of:
 1. Genre and themes
@@ -363,7 +305,7 @@ Return as JSON:
             # Create analysis prompt
             prompt = f"""Analyze this reading history and provide insights about the reader's preferences:
 
-{self._format_reading_history(books)}
+{self._format_books(books)}
 
 Provide a detailed analysis including:
 1. Genre preferences and patterns

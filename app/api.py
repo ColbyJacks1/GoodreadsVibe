@@ -17,6 +17,7 @@ from .enrich import enricher
 from .cluster import clusterer
 from .insights import insights_generator
 from .profile_insights import profile_insights_generator
+from .comprehensive_analysis import comprehensive_analyzer
 from .recommend import recommender
 from sqlmodel import SQLModel
 
@@ -92,11 +93,21 @@ class ProfileInsightsResponse(BaseModel):
     raw_response: Optional[str] = None
 
 
+class ComprehensiveAnalysisResponse(BaseModel):
+    success: bool
+    comprehensive_analysis: Optional[str] = None
+    parsed_sections: Optional[Dict[str, str]] = None
+    data_summary: Optional[Dict[str, Any]] = None
+    error: Optional[str] = None
+    raw_response: Optional[str] = None
+
+
 class RecommendationResponse(BaseModel):
     success: bool
-    recommendations: List[Dict[str, Any]]
+    recommendations: Optional[str] = None
     query: str
-    total_found: int
+    total_found: Optional[str] = None
+    error: Optional[str] = None
 
 
 class BookResponse(BaseModel):
@@ -264,19 +275,51 @@ async def get_profile_insights(request: InsightsRequest = Body(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# Comprehensive Analysis endpoint
+@app.post("/comprehensive-analysis", response_model=ComprehensiveAnalysisResponse)
+async def get_comprehensive_analysis(request: InsightsRequest = Body(...)):
+    """Generate comprehensive analysis including insights, profile, and recommendations."""
+    try:
+        result = comprehensive_analyzer.generate_comprehensive_analysis()
+        if result.get('success'):
+            return ComprehensiveAnalysisResponse(
+                success=True,
+                comprehensive_analysis=result['comprehensive_analysis'],
+                parsed_sections=result['parsed_sections'],
+                data_summary=result['data_summary'],
+                raw_response=result.get('raw_response', None)
+            )
+        else:
+            return ComprehensiveAnalysisResponse(
+                success=False,
+                error=result.get('error', 'Unknown error'),
+                raw_response=result.get('raw_response', None)
+            )
+    except Exception as e:
+        logger.error(f"Error generating comprehensive analysis: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Recommendation endpoint
 @app.get("/recommend", response_model=RecommendationResponse)
 async def get_recommendations(q: str, limit: int = 10):
     """Get personalized book recommendations."""
     try:
-        recommendations = recommender.recommend_books(q, limit=limit)
+        result = recommender.recommend_books(q, limit=limit)
         
-        return RecommendationResponse(
-            success=True,
-            recommendations=recommendations,
-            query=q,
-            total_found=len(recommendations)
-        )
+        if result.get('success'):
+            return RecommendationResponse(
+                success=True,
+                recommendations=result['recommendations'],
+                query=q,
+                total_found=result['total_found']
+            )
+        else:
+            return RecommendationResponse(
+                success=False,
+                query=q,
+                error=result.get('error', 'Unknown error')
+            )
     
     except Exception as e:
         logger.error(f"Error generating recommendations: {str(e)}")
@@ -339,6 +382,17 @@ async def get_profile_insights_stats():
         return {"success": True, "stats": stats}
     except Exception as e:
         logger.error(f"Error getting profile insights stats: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/stats/comprehensive-analysis")
+async def get_comprehensive_analysis_stats():
+    """Get comprehensive analysis generation statistics."""
+    try:
+        stats = comprehensive_analyzer.get_analysis_stats()
+        return {"success": True, "stats": stats}
+    except Exception as e:
+        logger.error(f"Error getting comprehensive analysis stats: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

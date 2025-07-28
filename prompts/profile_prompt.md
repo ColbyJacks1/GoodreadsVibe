@@ -8,7 +8,7 @@ INSTRUCTIONS:
 2. Be thorough in your analysis
 3. Use clear, direct language without being overly formal
 
-DIMENSIONS TO ANALYZE:
+POTENTIAL DIMENSIONS TO ANALYZE ):
 - Age and life stage
 - Geographic location and cultural background
 - Education level and academic interests
@@ -22,7 +22,6 @@ DIMENSIONS TO ANALYZE:
 - Parental status and family life
 - Health concerns and wellness interests
 - Major life transitions or changes
-- Seasonal patterns in reading interests
 - Hobbies and lifestyle choices
 - Travel patterns and cultural exposure
 - Technology adoption and digital literacy
@@ -36,11 +35,12 @@ ANALYSIS APPROACH:
 5. Consider the pace and volume of reading
 6. Look for evidence of specific interests or expertise areas
 7. Analyze the relationship between ratings and book characteristics
+8. Exclude a dimension if it does not have enough information for meaningful insights.
 
 OUTPUT FORMAT:
 
 ## SUMMARY
-Create a concise bullet-point summary with 3-5 key insights per category:
+Create a concise bullet-point summary with 2-4 key insights per category:
 
 **Core Demographics**
 - Age: [brief inference]
@@ -63,5 +63,7 @@ Below the summary, provide your full comprehensive analysis with clear headings 
 - Provide specific evidence from their reading data
 - Indicate your confidence level (high/medium/low)
 - Note any contradictions or mixed signals
+- Style: Write in bullet points for clarity
+
 
 BOOKS DATA: 
