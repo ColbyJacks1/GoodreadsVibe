@@ -104,6 +104,11 @@ class ComprehensiveAnalyzer:
             # Parse the response into sections
             parsed_sections = self._parse_comprehensive_response(response.text)
             
+            # Debug: Log what sections were found
+            logger.info(f"Parsed sections: {list(parsed_sections.keys())}")
+            for section, content in parsed_sections.items():
+                logger.info(f"Section '{section}' length: {len(content)} chars")
+            
             return {
                 "success": True,
                 "comprehensive_analysis": response.text,
@@ -139,28 +144,30 @@ class ComprehensiveAnalyzer:
         current_content = []
         
         for line in lines:
-            # Check for section headers
-            if "## LITERARY PSYCHOLOGY INSIGHTS" in line:
+            # Check for section headers (case insensitive and flexible)
+            line_upper = line.upper().strip()
+            
+            if "LITERARY PSYCHOLOGY INSIGHTS" in line_upper:
                 if current_section and current_content:
                     sections[current_section] = '\n'.join(current_content)
                 current_section = "insights"
                 current_content = [line]
-            elif "## PERSONAL PROFILE ANALYSIS" in line:
+            elif "PERSONAL PROFILE ANALYSIS" in line_upper:
                 if current_section and current_content:
                     sections[current_section] = '\n'.join(current_content)
                 current_section = "profile"
                 current_content = [line]
-            elif "## PERSONALIZED RECOMMENDATIONS" in line:
+            elif "PERSONALIZED" in line_upper and "RECOMMENDATION" in line_upper:
                 if current_section and current_content:
                     sections[current_section] = '\n'.join(current_content)
                 current_section = "recommendations"
                 current_content = [line]
-            elif "## HUMOROUS ROAST ANALYSIS" in line:
+            elif "HUMOROUS" in line_upper and "ROAST" in line_upper:
                 if current_section and current_content:
                     sections[current_section] = '\n'.join(current_content)
                 current_section = "humorous"
                 current_content = [line]
-            elif "## ANALYSIS SUMMARY" in line:
+            elif "ANALYSIS SUMMARY" in line_upper or line_upper.startswith("---"):
                 # End of sections, add final section
                 if current_section and current_content:
                     sections[current_section] = '\n'.join(current_content)
@@ -171,6 +178,27 @@ class ComprehensiveAnalyzer:
         # Add the last section
         if current_section and current_content:
             sections[current_section] = '\n'.join(current_content)
+        
+        # Fallback: If recommendations section is empty but profile section is very long,
+        # try to split the profile section on "PERSONALIZED" or "RECOMMENDATION" keywords
+        if not sections.get("recommendations") and sections.get("profile"):
+            profile_content = sections["profile"]
+            if "PERSONALIZED" in profile_content.upper() or "RECOMMENDATION" in profile_content.upper():
+                # Try to split the profile section
+                profile_lines = profile_content.split('\n')
+                recommendations_start = -1
+                
+                for i, line in enumerate(profile_lines):
+                    line_upper = line.upper()
+                    if ("PERSONALIZED" in line_upper and "RECOMMENDATION" in line_upper) or \
+                       ("BOOK" in line_upper and "RECOMMENDATION" in line_upper):
+                        recommendations_start = i
+                        break
+                
+                if recommendations_start > 0:
+                    # Split the content
+                    sections["profile"] = '\n'.join(profile_lines[:recommendations_start])
+                    sections["recommendations"] = '\n'.join(profile_lines[recommendations_start:])
         
 
         
