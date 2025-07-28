@@ -18,6 +18,7 @@ sys.path.insert(0, str(project_root))
 # Import backend modules directly
 from app.session_db import session_db_manager
 from app.ingest import GenreNormalizer
+from app.usage_logger import usage_logger
 
 # Import comprehensive analyzer with error handling for Streamlit Cloud
 try:
@@ -161,6 +162,9 @@ def main():
     # Clean up page names for routing
     page_clean = page.split(" ", 1)[1] if " " in page else page
     
+    # Log page view
+    usage_logger.log_page_view(page_clean)
+    
     if page_clean == "Upload":
         show_upload_page()
     elif page_clean == "Books and Stats":
@@ -209,6 +213,12 @@ def show_upload_page():
     if uploaded_file is not None:
         # Smart button state: Enable only when file is uploaded
         if st.button("🚀 Import & Process Data", type="primary", use_container_width=True):
+            # Log file upload
+            usage_logger.log_file_upload(
+                file_size=len(uploaded_file.getvalue()),
+                book_count=0  # Will be updated after processing
+            )
+            
             with st.spinner("Processing your Goodreads data..."):
                 # Save uploaded file temporarily
                 with tempfile.NamedTemporaryFile(mode='wb', suffix='.csv', delete=False) as tmp_file:
@@ -296,6 +306,9 @@ def show_upload_page():
                         'average_rating': round(avg_rating, 2)
                     }
                     
+                    # Log user stats after processing
+                    usage_logger.log_user_stats(st.session_state.user_stats)
+                    
                     st.success(f"✅ Successfully processed {processed_books} books!")
                     
                     # Show meaningful summary
@@ -328,6 +341,7 @@ def show_upload_page():
                     
                 except Exception as e:
                     st.error(f"❌ Error processing data: {str(e)}")
+                    usage_logger.log_error("file_upload", str(e))
                 finally:
                     # Clean up temp file
                     os.unlink(tmp_file_path)
@@ -905,6 +919,15 @@ def show_comprehensive_analysis_page_parallel():
         if can_generate:
             st.markdown("---")
             if st.button("🔮 Start Analysis", type="primary", use_container_width=True):
+                # Log analysis request
+                usage_logger.log_analysis_request(
+                    analysis_type="comprehensive",
+                    book_count=len(user_books)
+                )
+                
+                # Log user stats
+                usage_logger.log_user_stats(user_stats)
+                
                 st.session_state.analysis_status = "processing"
                 st.session_state.analysis_start_time = datetime.now()
                 st.session_state.pop('analysis_processing_started', None)

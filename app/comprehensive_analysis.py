@@ -4,6 +4,7 @@
 import json
 import logging
 import os
+import time
 from typing import Dict, Any, List, Optional
 import google.generativeai as genai
 from pathlib import Path
@@ -13,6 +14,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from .db import db_manager, LLMHistoryCreate
+from .usage_logger import usage_logger
 
 logger = logging.getLogger(__name__)
 
@@ -118,6 +120,15 @@ You should explore more non-fiction and historical fiction to balance your readi
                 # Parse the test response
                 parsed_sections = self._parse_quick_response(test_response)
                 
+                # Log the test response
+                usage_logger.log_ai_response(
+                    analysis_type="quick_analysis_test",
+                    prompt="Test prompt",
+                    response=test_response,
+                    book_count=0,
+                    processing_time=0.0
+                )
+                
                 return {
                     "success": True,
                     "quick_analysis": test_response,
@@ -139,10 +150,34 @@ You should explore more non-fiction and historical fiction to balance your readi
             quick_prompt = quick_prompt_template.format(books=books_text)
             
             logger.info("Generating quick analysis...")
+            
+            # Capture start time for processing time
+            start_time = time.time()
+            
             response = self.model.generate_content(quick_prompt)
             
+            processing_time = time.time() - start_time
+            
             if not response.text:
-                return {"error": "No response from LLM"}
+                error_msg = "No response from LLM"
+                usage_logger.log_ai_response(
+                    analysis_type="quick_analysis",
+                    prompt=quick_prompt,
+                    response="",
+                    book_count=len(books),
+                    processing_time=processing_time,
+                    error=error_msg
+                )
+                return {"error": error_msg}
+            
+            # Log the AI response
+            usage_logger.log_ai_response(
+                analysis_type="quick_analysis",
+                prompt=quick_prompt,
+                response=response.text,
+                book_count=len(books),
+                processing_time=processing_time
+            )
             
             # Parse quick response
             parsed_sections = self._parse_quick_response(response.text)
@@ -156,6 +191,7 @@ You should explore more non-fiction and historical fiction to balance your readi
         
         except Exception as e:
             logger.error(f"Error generating quick analysis: {str(e)}")
+            usage_logger.log_error("quick_analysis", str(e))
             return {"error": str(e)}
 
     def generate_comprehensive_analysis_parallel(self) -> Dict[str, Any]:
@@ -232,6 +268,15 @@ You prefer books that challenge your thinking and expand your worldview. You're 
                 # Parse the test response
                 parsed_sections = self._parse_comprehensive_response_parallel(test_response)
                 
+                # Log the test response
+                usage_logger.log_ai_response(
+                    analysis_type="comprehensive_analysis_test",
+                    prompt="Test prompt",
+                    response=test_response,
+                    book_count=0,
+                    processing_time=0.0
+                )
+                
                 return {
                     "success": True,
                     "comprehensive_analysis_parallel": test_response,
@@ -245,18 +290,38 @@ You prefer books that challenge your thinking and expand your worldview. You're 
             
             books_text = self._format_books(books)
             
-            # Load comprehensive analysis prompt
-            prompt_path = Path(__file__).parent.parent / "prompts" / "comprehensive_analysis_prompt_parallel.md"
-            with open(prompt_path, 'r') as f:
-                comprehensive_prompt_template = f.read()
-            
-            comprehensive_prompt = comprehensive_prompt_template.format(books=books_text)
+            # Format prompt
+            comprehensive_prompt = self.prompt_template.format(books=books_text)
             
             logger.info("Generating comprehensive analysis parallel...")
+            
+            # Capture start time for processing time
+            start_time = time.time()
+            
             response = self.model.generate_content(comprehensive_prompt)
             
+            processing_time = time.time() - start_time
+            
             if not response.text:
-                return {"error": "No response from LLM"}
+                error_msg = "No response from LLM"
+                usage_logger.log_ai_response(
+                    analysis_type="comprehensive_analysis",
+                    prompt=comprehensive_prompt,
+                    response="",
+                    book_count=len(books),
+                    processing_time=processing_time,
+                    error=error_msg
+                )
+                return {"error": error_msg}
+            
+            # Log the AI response
+            usage_logger.log_ai_response(
+                analysis_type="comprehensive_analysis",
+                prompt=comprehensive_prompt,
+                response=response.text,
+                book_count=len(books),
+                processing_time=processing_time
+            )
             
             # Parse comprehensive response
             parsed_sections = self._parse_comprehensive_response_parallel(response.text)
@@ -270,6 +335,7 @@ You prefer books that challenge your thinking and expand your worldview. You're 
         
         except Exception as e:
             logger.error(f"Error generating comprehensive analysis parallel: {str(e)}")
+            usage_logger.log_error("comprehensive_analysis", str(e))
             return {"error": str(e)}
     
 
