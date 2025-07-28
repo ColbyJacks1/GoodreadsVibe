@@ -135,62 +135,9 @@ def main():
 def show_upload_page():
     st.header("📤 Upload & Process")
     
-    # Main content area with better layout
-    st.write("Upload your Goodreads CSV file to analyze your reading data.")
-    
-    # Instructions and clear button in a single row
-    col1, col2 = st.columns([3, 1])
-    
-    with col1:
-        # Simple instructions for getting CSV
-        with st.expander("📋 How to get your Goodreads CSV file", expanded=False):
-            st.markdown("""
-            **📚 Getting your Goodreads data is easy! Follow these steps:**
-            
-            ### Step 1: Sign in to Goodreads
-            1. Go to [Goodreads.com](https://www.goodreads.com) and sign in to your account
-            2. If you don't have an account, create one first
-            
-            ### Step 2: Export Your Library
-            1. Go directly to: [Goodreads Import/Export Page](https://www.goodreads.com/review/import)
-            2. Click **"Export Library"** button
-            3. Wait for the file to generate (this may take a few minutes)
-            
-            ### Step 3: Download the File
-            1. Once ready, click **"Download"** to save the CSV file
-            2. The file will be named something like `goodreads_library_export.csv`
-            3. Save it somewhere you can easily find (like your Desktop)
-            
-            ### Step 4: Upload Here
-            1. Come back to this page
-            2. Click **"Browse files"** or drag and drop your CSV file
-            3. Click **"Import & Process Data"** to analyze your reading!
-            
-            **💡 Tip:** If you have a large library, the export might take 5-10 minutes to generate. Be patient!
-            """)
-    
-    with col2:
-        st.write("")  # Add spacing for alignment
-        if st.button("🗑️ Clear My Data", type="secondary", use_container_width=True):
-            with st.spinner("Clearing your data..."):
-                try:
-                    # Clear session data for this user
-                    session_db_manager.clear_user_books()
-                    st.session_state.user_stats = {
-                        'total_books': 0,
-                        'processed_books': 0,
-                        'enriched_books': 0,
-                        'books_with_ratings': 0,
-                        'average_rating': 0.0
-                    }
-                    st.success("✅ Your data cleared successfully!")
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"❌ Failed to clear data: {str(e)}")
-    
-    # File upload section with better spacing
-    st.markdown("---")
+    # Main upload section - the primary action
     st.subheader("📁 Upload Your Data")
+    st.write("Upload your Goodreads CSV file to analyze your reading data.")
     
     uploaded_file = st.file_uploader(
         "Choose your Goodreads CSV file",
@@ -338,6 +285,60 @@ def show_upload_page():
                 finally:
                     # Clean up temp file
                     os.unlink(tmp_file_path)
+    
+    # Help section below the main upload area
+    st.markdown("---")
+    st.subheader("📋 Need Help?")
+    
+    # Instructions and clear button in a single row
+    col1, col2 = st.columns([3, 1])
+    
+    with col1:
+        # Simple instructions for getting CSV
+        with st.expander("How to get your Goodreads CSV file", expanded=False):
+            st.markdown("""
+            **📚 Getting your Goodreads data is easy! Follow these steps:**
+            
+            ### Step 1: Sign in to Goodreads
+            1. Go to [Goodreads.com](https://www.goodreads.com) and sign in to your account
+            2. If you don't have an account, create one first
+            
+            ### Step 2: Export Your Library
+            1. Go directly to: [Goodreads Import/Export Page](https://www.goodreads.com/review/import)
+            2. Click **"Export Library"** button
+            3. Wait for the file to generate (this may take a few minutes)
+            
+            ### Step 3: Download the File
+            1. Once ready, click **"Download"** to save the CSV file
+            2. The file will be named something like `goodreads_library_export.csv`
+            3. Save it somewhere you can easily find (like your Desktop)
+            
+            ### Step 4: Upload Here
+            1. Come back to this page
+            2. Click **"Browse files"** or drag and drop your CSV file
+            3. Click **"Import & Process Data"** to analyze your reading!
+            
+            **💡 Tip:** If you have a large library, the export might take 5-10 minutes to generate. Be patient!
+            """)
+    
+    with col2:
+        st.write("")  # Add spacing for alignment
+        if st.button("🗑️ Clear My Data", type="secondary", use_container_width=True):
+            with st.spinner("Clearing your data..."):
+                try:
+                    # Clear session data for this user
+                    session_db_manager.clear_user_books()
+                    st.session_state.user_stats = {
+                        'total_books': 0,
+                        'processed_books': 0,
+                        'enriched_books': 0,
+                        'books_with_ratings': 0,
+                        'average_rating': 0.0
+                    }
+                    st.success("✅ Your data cleared successfully!")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"❌ Failed to clear data: {str(e)}")
     
     # Quick navigation at bottom
     show_quick_navigation()
