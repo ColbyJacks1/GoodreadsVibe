@@ -644,11 +644,69 @@ def show_comprehensive_analysis_page_parallel():
     
     can_generate = total_books >= 5 and books_with_ratings >= 3
     
+    # Add custom CSS for larger tab fonts
+    st.markdown("""
+    <style>
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        height: 60px;
+        padding-left: 20px;
+        padding-right: 20px;
+        font-size: 24px !important;
+        font-weight: bold !important;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #ff4b4b;
+        color: white !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
     if can_generate:
         # Check analysis status
         analysis_status = st.session_state.get('analysis_status', 'not_started')
         
-        if analysis_status == "processing":
+        if analysis_status == "not_started":
+            # Show all 4 tabs with placeholder content
+            tab1, tab2, tab3, tab4 = st.tabs([
+                "😂  ROAST ME  😂", 
+                "👤  PERSONAL PROFILE  👤", 
+                "📚  RECOMMENDATIONS  📚", 
+                "📖  LITERARY INSIGHTS  📖"
+            ])
+            
+            with tab1:
+                st.info("🔄 **Pending Analysis**")
+                st.write("Your humorous literary roast will appear here once analysis begins.")
+                st.write("This will include witty observations about your reading habits and personality!")
+            
+            with tab2:
+                st.info("🔄 **Pending Analysis**")
+                st.write("Your personal profile analysis will appear here once analysis begins.")
+                st.write("This will include deep insights about your personality, demographics, and reading psychology!")
+            
+            with tab3:
+                st.info("🔄 **Pending Analysis**")
+                st.write("Your personalized book recommendations will appear here once analysis begins.")
+                st.write("This will include curated book suggestions based on your reading history!")
+            
+            with tab4:
+                st.info("🔄 **Pending Analysis**")
+                st.write("Your literary psychology insights will appear here once analysis begins.")
+                st.write("This will include deep analysis of your reading patterns and psychological profile!")
+            
+            # Generate button
+            st.markdown("---")
+            if st.button("🔮 Start Analysis", type="primary", use_container_width=True):
+                st.session_state.analysis_status = "processing"
+                st.session_state.analysis_start_time = datetime.now()
+                st.session_state.pop('analysis_processing_started', None)
+                st.session_state.pop('last_refresh', None)
+                st.rerun()
+        
+        elif analysis_status == "processing":
             # Show processing state
             st.info("🔄 **Processing your comprehensive analysis...**")
             st.info("⏱️ **AI processing may take up to 2 minutes** - please be patient!")
@@ -690,13 +748,8 @@ def show_comprehensive_analysis_page_parallel():
                         st.session_state.pop("analysis_processing_started", None)
                 st.rerun()
             
-            # After quick analysis completes, start comprehensive analysis
-            # This block is now moved to the quick_completed case
-            
-            
             # Auto-refresh every 3 seconds to check if complete
             import time
-            # Check if we should auto-refresh (every 3 seconds)
             current_time = time.time()
             if 'last_refresh' not in st.session_state:
                 st.session_state.last_refresh = current_time
@@ -705,7 +758,6 @@ def show_comprehensive_analysis_page_parallel():
                 st.session_state.last_refresh = current_time
                 st.rerun()
             else:
-                # Show refresh button as alternative
                 if st.button("🔄 Check Status"):
                     st.rerun()
         
@@ -719,26 +771,6 @@ def show_comprehensive_analysis_page_parallel():
             # Show quick analysis results FIRST (immediate display)
             if 'quick_analysis_sections' in st.session_state:
                 sections = st.session_state['quick_analysis_sections']
-                
-                # Add custom CSS for larger tab fonts
-                st.markdown("""
-                <style>
-                .stTabs [data-baseweb="tab-list"] {
-                    gap: 8px;
-                }
-                .stTabs [data-baseweb="tab"] {
-                    height: 60px;
-                    padding-left: 20px;
-                    padding-right: 20px;
-                    font-size: 24px !important;
-                    font-weight: bold !important;
-                }
-                .stTabs [aria-selected="true"] {
-                    background-color: #ff4b4b;
-                    color: white !important;
-                }
-                </style>
-                """, unsafe_allow_html=True)
                 
                 tab1, tab2 = st.tabs([
                     "😂  ROAST ME  😂", 
@@ -805,26 +837,6 @@ def show_comprehensive_analysis_page_parallel():
             # Show completed analysis
             if 'comprehensive_analysis_sections' in st.session_state:
                 sections = st.session_state['comprehensive_analysis_sections']
-                
-                # Add custom CSS for larger tab fonts
-                st.markdown("""
-                <style>
-                .stTabs [data-baseweb="tab-list"] {
-                    gap: 8px;
-                }
-                .stTabs [data-baseweb="tab"] {
-                    height: 60px;
-                    padding-left: 20px;
-                    padding-right: 20px;
-                    font-size: 24px !important;
-                    font-weight: bold !important;
-                }
-                .stTabs [aria-selected="true"] {
-                    background-color: #ff4b4b;
-                    color: white !important;
-                }
-                </style>
-                """, unsafe_allow_html=True)
                 
                 tab1, tab2, tab3, tab4 = st.tabs([
                     "😂  ROAST ME  😂", 
