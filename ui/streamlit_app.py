@@ -838,10 +838,16 @@ def show_comprehensive_analysis_page_parallel():
                     try:
                         from app.comprehensive_analysis import comprehensive_analyzer
                         quick_result = comprehensive_analyzer.generate_quick_analysis()
+                        st.write(f"Debug - Quick analysis result success: {quick_result.get('success', False)}")
+                        st.write(f"Debug - Quick analysis sections: {list(quick_result.get('parsed_sections', {}).keys())}")
+                        st.write(f"Debug - Quick analysis sections lengths: { {k: len(v) for k, v in quick_result.get('parsed_sections', {}).items()} }")
                         if quick_result.get("success"):
                             st.session_state.quick_analysis_sections = quick_result.get("parsed_sections", {})
                             st.session_state.quick_analysis_completed = True
                             st.session_state.analysis_status = "quick_completed"
+                            # Store raw response for debugging
+                            if 'raw_response' in quick_result:
+                                st.session_state.quick_analysis_result = quick_result
                         else:
                             st.session_state.analysis_status = "error"
                             st.session_state.analysis_error = quick_result.get("error", "Unknown error")
@@ -888,6 +894,11 @@ def show_comprehensive_analysis_page_parallel():
                         st.markdown(sections['humorous'])
                     else:
                         st.warning("No humorous analysis available.")
+                        # Debug: Show what sections we actually have
+                        st.write("Debug - Available sections:", list(sections.keys()))
+                        st.write("Debug - Sections content lengths:", {k: len(v) for k, v in sections.items()})
+                        if 'raw_response' in st.session_state.get('quick_analysis_result', {}):
+                            st.write("Debug - Raw response preview:", st.session_state['quick_analysis_result']['raw_response'][:200] + "...")
                 
                 with tab2:
                     if sections.get('recommendations'):
@@ -912,10 +923,25 @@ def show_comprehensive_analysis_page_parallel():
                         comprehensive_result = comprehensive_analyzer.generate_comprehensive_analysis_parallel()
                         if comprehensive_result.get("success"):
                             st.session_state.comprehensive_analysis_sections_parallel = comprehensive_result.get("parsed_sections", {})
-                            # Combine sections
+                            # Store raw response for debugging
+                            if 'raw_response' in comprehensive_result:
+                                st.session_state.comprehensive_analysis_result = comprehensive_result
+                            # Combine sections - preserve quick analysis sections (humorous, recommendations)
                             all_sections = {}
-                            all_sections.update(st.session_state.get("quick_analysis_sections", {}))
-                            all_sections.update(st.session_state.get("comprehensive_analysis_sections_parallel", {}))
+                            # Start with quick analysis sections
+                            quick_sections = st.session_state.get("quick_analysis_sections", {})
+                            all_sections.update(quick_sections)
+                            st.write(f"Debug - Quick sections: {list(quick_sections.keys())}")
+                            st.write(f"Debug - Quick sections lengths: { {k: len(v) for k, v in quick_sections.items()} }")
+                            
+                            # Add comprehensive analysis sections (insights, profile) - don't overwrite quick sections
+                            comprehensive_sections = st.session_state.get("comprehensive_analysis_sections_parallel", {})
+                            for key, value in comprehensive_sections.items():
+                                # Only add sections that don't exist in quick analysis (insights, profile)
+                                if key not in ["humorous", "recommendations"]:
+                                    all_sections[key] = value
+                            st.write(f"Debug - Comprehensive sections: {list(comprehensive_sections.keys())}")
+                            st.write(f"Debug - Final combined sections: {list(all_sections.keys())}")
                             st.session_state.comprehensive_analysis_sections = all_sections
                             st.session_state.analysis_status = "completed"
                         else:
@@ -962,6 +988,34 @@ def show_comprehensive_analysis_page_parallel():
                         st.markdown(sections['humorous'])
                     else:
                         st.warning("No humorous analysis available.")
+                        # Debug: Show what sections we actually have
+                        st.write("Debug - Available sections:", list(sections.keys()))
+                        st.write("Debug - Sections content lengths:", {k: len(v) for k, v in sections.items()})
+                        
+                        # Show full raw responses for debugging
+                        st.write("=== DEBUG: RAW RESPONSES ===")
+                        
+                        # Quick analysis raw response
+                        if 'quick_analysis_result' in st.session_state and 'raw_response' in st.session_state['quick_analysis_result']:
+                            st.write("**Quick Analysis Raw Response:**")
+                            st.text(st.session_state['quick_analysis_result']['raw_response'])
+                        
+                        # Comprehensive analysis raw response
+                        if 'comprehensive_analysis_result' in st.session_state and 'raw_response' in st.session_state['comprehensive_analysis_result']:
+                            st.write("**Comprehensive Analysis Raw Response:**")
+                            st.text(st.session_state['comprehensive_analysis_result']['raw_response'])
+                        
+                        # Quick analysis sections
+                        if 'quick_analysis_sections' in st.session_state:
+                            st.write("**Quick Analysis Sections:**")
+                            st.write(st.session_state['quick_analysis_sections'])
+                        
+                        # Comprehensive analysis sections
+                        if 'comprehensive_analysis_sections_parallel' in st.session_state:
+                            st.write("**Comprehensive Analysis Sections:**")
+                            st.write(st.session_state['comprehensive_analysis_sections_parallel'])
+                        
+                        st.write("=== END DEBUG ===")
                 
                 with tab2:
                     if sections.get('recommendations'):
