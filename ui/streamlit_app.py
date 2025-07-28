@@ -203,6 +203,7 @@ def show_upload_page():
                                 'date_read': safe_str_or_none(row.get('Date Read')),
                                 'date_added': safe_str_or_none(row.get('Date Added')),
                                 'bookshelves': safe_str_or_none(row.get('Bookshelves')),
+                                'genres_raw': safe_str_or_none(row.get('Genres')),  # Use actual Genres field
                                 'my_review': safe_str_or_none(row.get('My Review')),
                                 'publisher': safe_str_or_none(row.get('Publisher')),
                                 'pages': int(row.get('Number of Pages', 0)) if pd.notna(row.get('Number of Pages')) else None,
@@ -226,18 +227,23 @@ def show_upload_page():
                     
                     debug_count = 0
                     for book in user_books:
-                        # Always process genres from bookshelves
-                        if book.get('bookshelves'):
-                            bookshelves_raw = book['bookshelves']
-                            normalized_genres = genre_normalizer.normalize_bookshelves(bookshelves_raw)
+                        # Process genres from the actual Genres field
+                        if book.get('genres_raw'):
+                            genres_raw = book['genres_raw']
+                            normalized_genres = genre_normalizer.normalize_bookshelves(genres_raw)
                             book['genres'] = ", ".join(normalized_genres) if normalized_genres else "Unknown"
                             
                             # Debug: Show first few examples
                             if debug_count < 3:
                                 st.write(f"📖 **{book['title']}**")
-                                st.write(f"   - Raw bookshelves: `{bookshelves_raw}`")
+                                st.write(f"   - Raw genres: `{genres_raw}`")
                                 st.write(f"   - Normalized genres: `{normalized_genres}`")
                                 debug_count += 1
+                        elif book.get('bookshelves'):
+                            # Fallback to bookshelves if no genres field
+                            bookshelves_raw = book['bookshelves']
+                            normalized_genres = genre_normalizer.normalize_bookshelves(bookshelves_raw)
+                            book['genres'] = ", ".join(normalized_genres) if normalized_genres else "Unknown"
                         else:
                             book['genres'] = "Unknown"
                         
