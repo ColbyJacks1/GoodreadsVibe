@@ -121,8 +121,23 @@ def show_upload_page():
     # Custom CSS to make the import button taller
     st.markdown("""
     <style>
+    /* Universal button styling with high specificity */
+    button {
+        font-size: 18px !important;
+        font-weight: bold !important;
+    }
+    
+    /* Streamlit button specific styling */
     .stButton > button {
         height: 60px !important;
+        font-size: 18px !important;
+        font-weight: bold !important;
+    }
+    
+    /* Target all buttons in the app */
+    div[data-testid="stButton"] button,
+    .stButton button,
+    button[data-baseweb="button"] {
         font-size: 18px !important;
         font-weight: bold !important;
     }
