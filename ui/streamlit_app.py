@@ -135,11 +135,13 @@ def main():
 def show_upload_page():
     st.header("📤 Upload & Process")
     
-    # Database reset option
+    # Main content area with better layout
+    st.write("Upload your Goodreads CSV file to analyze your reading data.")
+    
+    # Instructions and clear button in a single row
     col1, col2 = st.columns([3, 1])
+    
     with col1:
-        st.write("Upload your Goodreads CSV file to analyze your reading data.")
-        
         # Simple instructions for getting CSV
         with st.expander("📋 How to get your Goodreads CSV file", expanded=False):
             st.markdown("""
@@ -166,9 +168,10 @@ def show_upload_page():
             
             **💡 Tip:** If you have a large library, the export might take 5-10 minutes to generate. Be patient!
             """)
-            
+    
     with col2:
-        if st.button("🗑️ Clear My Data", type="secondary"):
+        st.write("")  # Add spacing for alignment
+        if st.button("🗑️ Clear My Data", type="secondary", use_container_width=True):
             with st.spinner("Clearing your data..."):
                 try:
                     # Clear session data for this user
@@ -185,17 +188,20 @@ def show_upload_page():
                 except Exception as e:
                     st.error(f"❌ Failed to clear data: {str(e)}")
     
-    # File upload
+    # File upload section with better spacing
+    st.markdown("---")
+    st.subheader("📁 Upload Your Data")
+    
     uploaded_file = st.file_uploader(
-        "Upload your Goodreads CSV file",
+        "Choose your Goodreads CSV file",
         type=['csv'],
         help="Export your Goodreads library as CSV and upload it here"
     )
     
     if uploaded_file is not None:
-        st.success(f"File uploaded: {uploaded_file.name}")
+        st.success(f"✅ File uploaded: {uploaded_file.name}")
         
-        # Single process button
+        # Process button with better styling
         if st.button("🚀 Import & Process Data", type="primary", use_container_width=True):
             with st.spinner("Processing your Goodreads data..."):
                 # Save uploaded file temporarily
@@ -241,13 +247,39 @@ def show_upload_page():
                                 'genres_raw': safe_str_or_none(row.get('Genres')),  # Use actual Genres field
                                 'my_review': safe_str_or_none(row.get('My Review')),
                                 'publisher': safe_str_or_none(row.get('Publisher')),
-                                'pages': int(row.get('Number of Pages', 0)) if pd.notna(row.get('Number of Pages')) else None,
-                                'year_published': int(row.get('Original Publication Year', 0)) if pd.notna(row.get('Original Publication Year')) else None,
                                 'isbn': safe_str_or_none(row.get('ISBN')),
-                                'isbn13': safe_str_or_none(row.get('ISBN13'))
+                                'isbn13': safe_str_or_none(row.get('ISBN13')),
+                                'num_pages': safe_str_or_none(row.get('Number of Pages')),
+                                'year_published': safe_str_or_none(row.get('Year Published')),
+                                'original_publication_year': safe_str_or_none(row.get('Original Publication Year')),
+                                'date_read_obj': None,
+                                'date_added_obj': None
                             }
                             
-                            # Add to session
+                            # Process dates
+                            if book_data['date_read']:
+                                try:
+                                    book_data['date_read_obj'] = datetime.strptime(book_data['date_read'], '%Y/%m/%d')
+                                except:
+                                    pass
+                            
+                            if book_data['date_added']:
+                                try:
+                                    book_data['date_added_obj'] = datetime.strptime(book_data['date_added'], '%Y/%m/%d')
+                                except:
+                                    pass
+                            
+                            # Process genres - prioritize Genres field over Bookshelves
+                            if book_data['genres_raw']:
+                                # Use the Genres field directly
+                                book_data['genres'] = book_data['genres_raw']
+                            elif book_data['bookshelves']:
+                                # Fall back to Bookshelves if Genres not available
+                                book_data['genres'] = book_data['bookshelves']
+                            else:
+                                book_data['genres'] = None
+                            
+                            # Store book in session database
                             session_db_manager.add_user_book(book_data)
                             processed_books += 1
                             
@@ -255,41 +287,28 @@ def show_upload_page():
                             skipped_books += 1
                             continue
                     
-                    # Process book metadata
-                    user_books = session_db_manager.get_user_books()
-                    genre_normalizer = GenreNormalizer()
+                    # Update session state
+                    st.session_state.user_books = session_db_manager.get_user_books()
                     
-                    for book in user_books:
-                        # Process genres from the actual Genres field
-                        if book.get('genres_raw'):
-                            genres_raw = book['genres_raw']
-                            normalized_genres = genre_normalizer.normalize_bookshelves(genres_raw)
-                            book['genres'] = ", ".join(normalized_genres) if normalized_genres else "Unknown"
-                        elif book.get('bookshelves'):
-                            # Fallback to bookshelves if no genres field
-                            bookshelves_raw = book['bookshelves']
-                            normalized_genres = genre_normalizer.normalize_bookshelves(bookshelves_raw)
-                            book['genres'] = ", ".join(normalized_genres) if normalized_genres else "Unknown"
-                        else:
-                            book['genres'] = "Unknown"
-                    
-                    # Update final stats
-                    books_with_ratings = len([b for b in user_books if b.get('my_rating')])
-                    avg_rating = sum(b.get('my_rating', 0) for b in user_books if b.get('my_rating')) / books_with_ratings if books_with_ratings > 0 else 0
+                    # Calculate stats
+                    books_with_ratings = sum(1 for book in st.session_state.user_books if hasattr(book, 'my_rating') and book.my_rating and book.my_rating > 0)
+                    total_rating = sum(book.my_rating for book in st.session_state.user_books if hasattr(book, 'my_rating') and book.my_rating and book.my_rating > 0)
+                    avg_rating = total_rating / books_with_ratings if books_with_ratings > 0 else 0
                     
                     st.session_state.user_stats = {
-                        'total_books': len(user_books),
+                        'total_books': len(st.session_state.user_books),
                         'processed_books': processed_books,
                         'books_with_ratings': books_with_ratings,
-                        'average_rating': round(avg_rating, 2)
+                        'average_rating': avg_rating
                     }
                     
+                    # Display results in a clean format
                     st.success(f"✅ Successfully processed {processed_books} books!")
                     
-                    # Show meaningful summary
+                    # Show stats in columns
                     col1, col2, col3 = st.columns(3)
                     with col1:
-                        st.metric("📚 Total Books", len(user_books))
+                        st.metric("📚 Total Books", len(st.session_state.user_books))
                     with col2:
                         st.metric("⭐ Rated Books", books_with_ratings)
                     with col3:
@@ -299,7 +318,7 @@ def show_upload_page():
                         st.warning(f"⚠️ Skipped {skipped_books} books due to formatting issues")
                     
                     # Start background comprehensive analysis if sufficient data
-                    if len(user_books) >= 5 and books_with_ratings >= 3:
+                    if len(st.session_state.user_books) >= 5 and books_with_ratings >= 3:
                         st.session_state.analysis_status = "processing"
                         st.session_state.analysis_start_time = datetime.now()
                         # Clear any existing analysis
