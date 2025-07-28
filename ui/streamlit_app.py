@@ -225,27 +225,25 @@ def show_upload_page():
                     enriched_count = 0
                     genre_normalizer = GenreNormalizer()
                     
-                    debug_count = 0
+                    # Debug: Show available columns from first book
+                    if user_books:
+                        st.write("**Debug - Available fields:**", list(user_books[0].keys()))
+                    
                     for book in user_books:
-                        # Process genres from the actual Genres field
-                        if book.get('genres_raw'):
-                            genres_raw = book['genres_raw']
-                            normalized_genres = genre_normalizer.normalize_bookshelves(genres_raw)
-                            book['genres'] = ", ".join(normalized_genres) if normalized_genres else "Unknown"
+                        # Process genres - prefer Genres field, fallback to Bookshelves  
+                        genre_source = book.get('genres_raw') or book.get('bookshelves')
+                        
+                        if genre_source and genre_source.strip():
+                            normalized_genres = genre_normalizer.normalize_bookshelves(genre_source)
+                            book['genres'] = ", ".join(normalized_genres) if normalized_genres else "Fiction"
                             
-                            # Debug: Show first few examples
-                            if debug_count < 3:
-                                st.write(f"📖 **{book['title']}**")
-                                st.write(f"   - Raw genres: `{genres_raw}`")
-                                st.write(f"   - Normalized genres: `{normalized_genres}`")
-                                debug_count += 1
-                        elif book.get('bookshelves'):
-                            # Fallback to bookshelves if no genres field
-                            bookshelves_raw = book['bookshelves']
-                            normalized_genres = genre_normalizer.normalize_bookshelves(bookshelves_raw)
-                            book['genres'] = ", ".join(normalized_genres) if normalized_genres else "Unknown"
+                            # Debug first book
+                            if book == user_books[0]:
+                                st.write(f"**Debug - {book['title']}:**")
+                                st.write(f"- Raw: `{genre_source}`")
+                                st.write(f"- Normalized: `{normalized_genres}`")
                         else:
-                            book['genres'] = "Unknown"
+                            book['genres'] = "Fiction"  # Default instead of Unknown
                         
                         # Simulate other enrichment with additional metadata
                         if not book.get('description'):
@@ -267,31 +265,24 @@ def show_upload_page():
                     }
                     
                     st.success(f"✅ Successfully processed {processed_books} books!")
-                    st.info(f"📊 Enriched {enriched_count} books with additional metadata")
                     
-                    # Show summary
-                    col1, col2, col3 = st.columns(3)
+                    # Show main stats
+                    col1, col2 = st.columns(2)
                     with col1:
                         st.metric("📚 Total Books", len(user_books))
                     with col2:
                         st.metric("⭐ Rated Books", books_with_ratings)
-                    with col3:
-                        st.metric("🔍 Enriched", enriched_count)
                     
                     if skipped_books > 0:
                         st.warning(f"⚠️ Skipped {skipped_books} books due to formatting issues")
                     
-                    # Start background comprehensive analysis if sufficient data
+                    # Start background comprehensive analysis silently
                     if len(user_books) >= 5 and books_with_ratings >= 3:
-                        st.info("🔮 Starting comprehensive analysis in background...")
                         st.session_state.analysis_status = "processing"
                         st.session_state.analysis_start_time = datetime.now()
                         # Clear any existing analysis
                         st.session_state.pop('comprehensive_analysis_result', None)
                         st.session_state.pop('comprehensive_analysis_sections', None)
-                        
-                        # Note: Actual processing will happen when user navigates to the page
-                        # due to Streamlit's architecture
                     
                 except Exception as e:
                     st.error(f"❌ Error processing data: {str(e)}")
