@@ -32,8 +32,8 @@ class ComprehensiveAnalyzer:
             model_name = os.getenv("GEMINI_INSIGHTS_MODEL", "gemini-2.5-flash")
             self.model = genai.GenerativeModel(model_name)
         
-        # Load comprehensive prompt template
-        prompt_path = Path(__file__).parent.parent / "prompts" / "comprehensive_analysis_prompt.md"
+        # Load comprehensive prompt template (for parallel analysis)
+        prompt_path = Path(__file__).parent.parent / "prompts" / "comprehensive_analysis_prompt_parallel.md"
         with open(prompt_path, 'r') as f:
             self.prompt_template = f.read()
     
@@ -65,64 +65,7 @@ class ComprehensiveAnalyzer:
         
         return "\n".join(book_lines)
 
-    def generate_comprehensive_analysis(self) -> Dict[str, Any]:
-        """Generate comprehensive analysis including insights, profile, and recommendations."""
-        try:
-            if not self.model:
-                db_manager.add_llm_history(LLMHistoryCreate(
-                    prompt="MODEL NOT AVAILABLE",
-                    response="Google Gemini model not available. Please set GOOGLE_GEMINI_API_KEY environment variable.",
-                    extra="{\"status\": \"error\"}"
-                ))
-                return {"error": "Google Gemini model not available. Please set GOOGLE_GEMINI_API_KEY environment variable.", "raw_response": "Google Gemini model not available. Please set GOOGLE_GEMINI_API_KEY environment variable."}
-            
-            # Get user's books
-            books = self.db.get_all_books()
-            if not books:
-                return {"error": "No books found"}
-            
-            # Format books for context
-            books_text = self._format_books(books)
-            
-            # Create the comprehensive prompt
-            full_prompt = self.prompt_template.format(books=books_text)
-            
-            logger.info("Generating comprehensive analysis...")
-            response = self.model.generate_content(full_prompt)
-            logger.info(f"LLM raw response: {response.text}")
-            
-            if not response.text:
-                return {"error": "No response from LLM", "raw_response": ""}
-            
-            # Log the interaction
-            db_manager.add_llm_history(LLMHistoryCreate(
-                prompt="Comprehensive analysis request",
-                response=response.text,
-                extra=json.dumps({"status": "success", "analysis_type": "comprehensive"})
-            ))
-            
-            # Parse the response into sections
-            parsed_sections = self._parse_comprehensive_response(response.text)
-            
-            return {
-                "success": True,
-                "comprehensive_analysis": response.text,
-                "parsed_sections": parsed_sections,
-                "raw_response": response.text,
-                "data_summary": {
-                    "total_books": len(books),
-                    "avg_rating": sum(b.my_rating for b in books if b.my_rating) / len([b for b in books if b.my_rating]) if any(b.my_rating for b in books) else 0
-                }
-            }
-        
-        except Exception as e:
-            logger.error(f"Error generating comprehensive analysis: {str(e)}")
-            db_manager.add_llm_history(LLMHistoryCreate(
-                prompt="EXCEPTION",
-                response=str(e),
-                extra="{\"status\": \"error\"}"
-            ))
-            return {"error": str(e), "raw_response": str(e)}
+
 
     def generate_quick_analysis(self) -> Dict[str, Any]:
         """Generate quick analysis (roast + recommendations) for immediate display."""
@@ -328,55 +271,7 @@ You prefer books that challenge your thinking and expand your worldview. You're 
             logger.error(f"Error generating comprehensive analysis parallel: {str(e)}")
             return {"error": str(e)}
     
-    def _parse_comprehensive_response(self, response_text: str) -> Dict[str, str]:
-        """Parse the comprehensive response into separate sections."""
-        sections = {
-            "insights": "",
-            "profile": "",
-            "recommendations": "",
-            "humorous": ""
-        }
-        
-        # More robust parsing - look for section headers
-        lines = response_text.split('\n')
-        current_section = None
-        current_content = []
-        
-        for line in lines:
-            # Check for section headers
-            if "## LITERARY PSYCHOLOGY INSIGHTS" in line:
-                if current_section and current_content:
-                    sections[current_section] = '\n'.join(current_content)
-                current_section = "insights"
-                current_content = [line]
-            elif "## PERSONAL PROFILE ANALYSIS" in line:
-                if current_section and current_content:
-                    sections[current_section] = '\n'.join(current_content)
-                current_section = "profile"
-                current_content = [line]
-            elif "## PERSONALIZED RECOMMENDATIONS" in line:
-                if current_section and current_content:
-                    sections[current_section] = '\n'.join(current_content)
-                current_section = "recommendations"
-                current_content = [line]
-            elif "## ROAST ME" in line:
-                if current_section and current_content:
-                    sections[current_section] = '\n'.join(current_content)
-                current_section = "humorous"
-                current_content = [line]
-            elif "## ANALYSIS SUMMARY" in line:
-                # End of sections, add final section
-                if current_section and current_content:
-                    sections[current_section] = '\n'.join(current_content)
-                break
-            elif current_section:
-                current_content.append(line)
-        
-        # Add the last section
-        if current_section and current_content:
-            sections[current_section] = '\n'.join(current_content)
-        
-        return sections
+
 
     def _parse_quick_response(self, response_text: str) -> Dict[str, str]:
         """Parse the quick response into separate sections."""
