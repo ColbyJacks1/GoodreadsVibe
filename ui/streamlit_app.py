@@ -121,22 +121,8 @@ def show_upload_page():
     # Custom CSS to make the import button taller
     st.markdown("""
     <style>
-    /* Target the specific import button by its text content */
-    .stButton > button:contains("Import & Process Data") {
-        font-size: 18px !important;
-        font-weight: bold !important;
+    .stButton > button {
         height: 60px !important;
-    }
-    
-    /* Alternative approach - target by button attributes */
-    .stButton > button[data-baseweb="button"] {
-        font-size: 18px !important;
-        font-weight: bold !important;
-        height: 60px !important;
-    }
-    
-    /* Force all text in buttons to be larger */
-    .stButton > button * {
         font-size: 18px !important;
         font-weight: bold !important;
     }
@@ -152,8 +138,18 @@ def show_upload_page():
         help="Export your Goodreads library as CSV and upload it here"
     )
     
+    # Progressive disclosure: Show subtle help hint when no file uploaded
+    if uploaded_file is None:
+        st.info("💡 **Need help?** Click 'How to get your CSV file' below for step-by-step instructions.")
+        
+        # Show disabled button when no file uploaded
+        st.button("🚀 Import & Process Data", type="primary", use_container_width=True, disabled=True)
+    
     if uploaded_file is not None:
-        # Single process button - full width and taller
+        # Show file preview and success message
+        st.success(f"✅ **File uploaded:** {uploaded_file.name} ({uploaded_file.size / 1024:.1f} KB)")
+        
+        # Smart button state: Enable only when file is uploaded
         if st.button("🚀 Import & Process Data", type="primary", use_container_width=True):
             with st.spinner("Processing your Goodreads data..."):
                 # Save uploaded file temporarily
