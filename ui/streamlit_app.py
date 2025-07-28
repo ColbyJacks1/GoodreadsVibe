@@ -10,6 +10,11 @@ import tempfile
 import sys
 from pathlib import Path
 
+# Add the project root to Python path for imports
+current_dir = Path(__file__).parent
+project_root = current_dir.parent
+sys.path.insert(0, str(project_root))
+
 # Import backend modules directly
 from app.session_db import session_db_manager
 

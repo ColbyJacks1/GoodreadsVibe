@@ -1,5 +1,5 @@
 # core app
-streamlit>=1.41
+streamlit>=1.47
 sqlmodel>=0.0.24
 pydantic>=2,<3
 
