@@ -727,6 +727,9 @@ def show_profile_analysis_page():
 
 
 def show_comprehensive_analysis_page_parallel():
+    # Clear any previous content and ensure clean white background
+    st.empty()
+    st.markdown('<div style="background-color: white; padding: 10px;"></div>', unsafe_allow_html=True)
     st.header("🔮 Analyze Me")
     
     # Get user data
@@ -814,7 +817,7 @@ def show_comprehensive_analysis_page_parallel():
             # Show all 4 tabs with processing placeholders
             tab1, tab2, tab3, tab4 = st.tabs([
                 "😂  ROAST ME  😂", 
-                "📚  RECOMMENDATIONS  📚", 
+                "��  RECOMMENDATIONS  📚", 
                 "👤  PERSONAL PROFILE  👤", 
                 "📖  LITERARY INSIGHTS  📖"
             ])
