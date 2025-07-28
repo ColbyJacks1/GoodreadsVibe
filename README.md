@@ -1,6 +1,6 @@
 # 📚 Goodreads Analyzer
 
-A local Streamlit + FastAPI application that provides **deep, non-deterministic literary psychology insights** from your Goodreads reading data. Discover what your reading patterns reveal about your personality, intellectual preferences, and emotional landscape.
+A local Streamlit application that provides **deep, non-deterministic literary psychology insights** from your Goodreads reading data. Discover what your reading patterns reveal about your personality, intellectual preferences, and emotional landscape.
 
 ## ✨ Features
 
@@ -8,26 +8,22 @@ A local Streamlit + FastAPI application that provides **deep, non-deterministic 
 - **Non-deterministic analysis**: Each insight generation produces unique, surprising interpretations
 - **Multiple analysis types**: Comprehensive analysis, profile insights, and targeted insights
 - **Google Gemini-powered**: Advanced LLM analysis of your reading patterns
-- **Cluster-based insights**: Uses book clustering to identify reading personality archetypes
 
 ### 📊 **Comprehensive Data Processing**
 - **Goodreads CSV ingestion**: Import your complete reading history
 - **Open Library enrichment**: Automatically adds descriptions, subjects, and genres
-- **K-means clustering**: Auto-selects optimal number of clusters (3-12)
-- **UMAP visualization**: 2D projection of your reading universe
+- **Simple data management**: SQLite database with clean data models
 
 ### 🎯 **AI-Powered Recommendations**
 - **Gemini AI engine**: Uses Google's Gemini model for intelligent recommendations
 - **Context-aware suggestions**: Analyzes your reading history and preferences
 - **Personalized explanations**: Each recommendation includes detailed reasoning
 - **Reading preferences analysis**: Deep insights into your literary tastes
-- **Similar book discovery**: Find books like your favorites using AI
 
 ### 📈 **Beautiful Visualizations**
 - **Reading timeline**: Track your literary journey over time
 - **Rating heatmaps**: Visualize your rating patterns
 - **Genre sunburst**: Explore your genre preferences
-- **Cluster scatter plots**: See your books in 2D space
 - **Interactive dashboards**: Modern, responsive UI
 
 ## 🚀 Quick Start
@@ -53,7 +49,8 @@ A local Streamlit + FastAPI application that provides **deep, non-deterministic 
 3. **Set up environment variables**
    ```bash
    cp env.example .env
-   # Edit .env with your API keys
+   # Edit .env with your Google Gemini API key:
+   # GOOGLE_GEMINI_API_KEY=your_api_key_here
    ```
 
 4. **Start the application**
@@ -62,7 +59,6 @@ A local Streamlit + FastAPI application that provides **deep, non-deterministic 
    ```
 
 5. **Open your browser**
-   - FastAPI docs: http://localhost:8000/docs
    - Streamlit UI: http://localhost:8501
 
 ## 📋 Usage Guide
@@ -104,50 +100,33 @@ The system generates insights like:
 
 ## 🛠️ Technical Architecture
 
-### Backend (FastAPI)
+### Application (Streamlit)
 - **Database**: SQLite with SQLModel ORM
 - **LLM**: Google Gemini for insights generation
-- **Clustering**: K-means with UMAP dimensionality reduction
-
-### Frontend (Streamlit)
-- **Interactive visualizations**: Plotly charts
-- **Real-time processing**: Progress indicators and status updates
-- **Responsive design**: Works on desktop and mobile
-- **File upload**: Drag-and-drop CSV import
+- **UI**: Interactive Streamlit interface with Plotly visualizations
 
 ### Data Flow
 ```
-Goodreads CSV → Ingestion → Enrichment → Clustering → Insights
+Goodreads CSV → Ingestion → Enrichment → Insights Generation
 ```
 
-## 📊 API Endpoints
+## 📊 Core Functionality
 
-### Core Processing
-- `POST /upload` - Upload and ingest Goodreads CSV
-- `POST /enrich` - Enrich books with Open Library metadata
-- `POST /cluster` - Perform K-means clustering
+### Data Processing
+- **CSV Upload**: Upload and process Goodreads CSV files
+- **Data Enrichment**: Enhance books with Open Library metadata
+- **Data Analysis**: Generate comprehensive reading insights
 
 ### Analysis & Insights
-- `POST /comprehensive-analysis` - Generate comprehensive literary psychology insights
-- `POST /profile-insights` - Generate reading personality profile
-- `POST /insights` - Generate targeted psychological insights
-- `GET /recommend?q=<query>` - Get personalized recommendations
-- `GET /books/{book_id}/similar` - Find similar books
+- **Comprehensive Analysis**: Generate deep literary psychology insights
+- **Profile Analysis**: Create reading personality profiles  
+- **Targeted Insights**: Get specific psychological analysis
+- **AI Recommendations**: Get personalized book suggestions
 
-### Statistics
-- `GET /stats/ingestion` - Ingestion statistics
-- `GET /stats/enrichment` - Enrichment statistics
-- `GET /stats/clustering` - Clustering statistics
-- `GET /stats/insights` - Insights generation statistics
-- `GET /stats/profile-insights` - Profile insights statistics
-- `GET /stats/comprehensive-analysis` - Comprehensive analysis statistics
-- `GET /stats/recommendations` - Recommendation statistics
-
-### Data Access
-- `GET /books` - Get all books
-- `GET /books/cluster/{cluster_id}` - Get books by cluster
-- `GET /clusters/exemplars` - Get cluster exemplars
-- `GET /recommendations/preferences` - Analyze reading preferences
+### Statistics & Dashboards
+- **Reading Statistics**: Track reading habits and patterns
+- **Visual Dashboards**: Interactive charts and graphs
+- **Progress Tracking**: Monitor data processing status
 
 ## 🧪 Testing
 
@@ -182,13 +161,10 @@ make all
 # Full development workflow
 make workflow
 
-# Start development server
-make dev
-
-# Start Streamlit UI
+# Start Streamlit application
 make streamlit
 
-# Start both backend and frontend
+# Alternative start command
 make start
 ```
 
@@ -257,7 +233,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - **Open Library**: For rich book metadata
 - **Google Gemini**: For advanced language model capabilities
 - **Streamlit**: For the beautiful UI framework
-- **FastAPI**: For the robust API framework
 
 ---
 

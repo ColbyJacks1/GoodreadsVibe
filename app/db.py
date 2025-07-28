@@ -33,13 +33,6 @@ class Book(SQLModel, table=True):
     genres: Optional[str] = Field(default=None)
     language: Optional[str] = Field(default=None)
     
-    # Embedding and clustering data
-    # embedding: Optional[str] = Field(default=None)  # JSON string of embedding
-    # cluster_id: Optional[int] = Field(default=None, index=True)
-    # centroid_distance: Optional[float] = Field(default=None)
-    # umap_x: Optional[float] = Field(default=None)
-    # umap_y: Optional[float] = Field(default=None)
-    
     # Metadata
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
@@ -73,17 +66,6 @@ class BookUpdate(BaseModel):
     subjects: Optional[str] = None
     genres: Optional[str] = None
     language: Optional[str] = None
-
-
-class ClusterStats(BaseModel):
-    """Statistics for a cluster."""
-    cluster_id: int
-    size: int
-    avg_rating: float
-    top_genres: List[str]
-    top_authors: List[str]
-    exemplar_books: List[str]
-    centroid_embedding: List[float]
 
 
 class LLMHistory(SQLModel, table=True):
@@ -137,11 +119,6 @@ class DatabaseManager:
             statement = select(Book)
             return list(session.exec(statement))
     
-    def get_books_by_cluster(self, cluster_id: int) -> List[Book]:
-        """Get all books in a cluster. (Clustering is no longer used)"""
-        # Return empty list since clustering is disabled
-        return []
-    
     def update_book(self, book_id: str, update_data: BookUpdate) -> Optional[Book]:
         """Update a book."""
         with self.get_session() as session:
@@ -154,11 +131,6 @@ class DatabaseManager:
                 session.commit()
                 session.refresh(book)
             return book
-    
-    def get_cluster_stats(self) -> List[ClusterStats]:
-        """Get statistics for all clusters. (Clustering is no longer used)"""
-        # Return empty list since clustering is disabled
-        return []
 
     def add_llm_history(self, history_data: LLMHistoryCreate) -> LLMHistory:
         """Add a new LLM prompt/response record to the database."""

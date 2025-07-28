@@ -1,7 +1,7 @@
-.PHONY: help install dev test lint format clean sample-db start
+.PHONY: help install streamlit test lint format clean sample-db setup
 
 help: ## Show this help message
-	@echo "Book Mirror Plus - Development Commands"
+	@echo "Goodreads Analyzer - Development Commands"
 	@echo "======================================"
 	@echo ""
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -9,17 +9,13 @@ help: ## Show this help message
 install: ## Install dependencies
 	poetry install
 
-dev: ## Start FastAPI development server
-	poetry run dev
-
 streamlit: ## Start Streamlit UI
-	poetry run streamlit
+	poetry run streamlit run ui/streamlit_app.py
 
-start: ## Start both backend and frontend
-	python start_app.py
+start: streamlit ## Start the application (alias for streamlit)
 
 test: ## Run all tests
-	poetry run test
+	poetry run pytest tests/ -v
 
 test-ingest: ## Run ingestion tests
 	poetry run pytest tests/test_ingest.py -v
@@ -48,7 +44,7 @@ sample-db: ## Create sample database with dummy data
 	python create_sample_db.py
 
 setup: install sample-db ## Full setup: install dependencies and create sample DB
-	@echo "✅ Setup complete! Run 'make dev' to start the FastAPI server"
+	@echo "✅ Setup complete! Run 'make streamlit' to start the application"
 
 all: format lint test ## Run all quality checks
 	@echo "✅ All checks passed!"

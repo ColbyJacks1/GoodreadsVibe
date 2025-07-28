@@ -1,4 +1,4 @@
-"""Deep literary psychology insights generation using Google Gemini."""
+"""Literary psychology insights using Google Gemini."""
 
 import json
 import logging
@@ -6,6 +6,10 @@ import os
 from typing import Dict, Any, List, Optional
 import google.generativeai as genai
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 from .db import db_manager, LLMHistoryCreate
 from .cluster import clusterer

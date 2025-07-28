@@ -1,58 +1,47 @@
 """Streamlit UI for book-mirror-plus."""
 
 import streamlit as st
-import requests
-import json
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 from datetime import datetime
 import os
+import tempfile
+import sys
+from pathlib import Path
+
+# Add the app directory to the Python path so we can import modules
+app_dir = Path(__file__).parent.parent / "app"
+sys.path.insert(0, str(app_dir))
+
+# Import backend modules directly
+from app.ingest import ingester
+from app.enrich import enricher
+from app.cluster import clusterer
+from app.insights import insights_generator
+from app.profile_insights import profile_insights_generator
+from app.recommend import recommender
+from app.comprehensive_analysis import comprehensive_analyzer
+from app.db import db_manager
+
+
+def sqlmodel_to_dict(obj):
+    """Convert SQLModel object to dictionary to avoid Pydantic compatibility issues."""
+    if hasattr(obj, '__dict__'):
+        return {k: v for k, v in obj.__dict__.items() if not k.startswith('_')}
+    return obj
+
 
 # Configure page
 st.set_page_config(
-    page_title="Book Mirror Plus",
+    page_title="Goodreads Analyzer",
     page_icon="📚",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# API configuration
-API_BASE_URL = "http://localhost:8000"
-
-def make_api_request(endpoint, method="GET", data=None, files=None):
-    """Make API request to FastAPI backend."""
-    try:
-        url = f"{API_BASE_URL}{endpoint}"
-        
-        if method == "GET":
-            response = requests.get(url, timeout=300)
-        elif method == "POST":
-            if files:
-                response = requests.post(url, files=files, timeout=300)
-            else:
-                response = requests.post(url, json=data, timeout=300)
-        else:
-            return None
-        
-        response.raise_for_status()
-        return response.json()
-    
-    except requests.exceptions.ConnectionError:
-        st.error("❌ Cannot connect to API server. Please make sure the FastAPI backend is running on http://localhost:8000")
-        return None
-    except requests.exceptions.Timeout:
-        st.error("⏰ API request timed out. Please try again.")
-        return None
-    except requests.exceptions.RequestException as e:
-        st.error(f"API Error: {str(e)}")
-        return None
-    except Exception as e:
-        st.error(f"Unexpected error: {str(e)}")
-        return None
-
 def main():
-    st.title("📚 Book Mirror Plus")
+    st.title("📚 Goodreads Analyzer")
     st.markdown("Deep literary psychology insights from your Goodreads data")
     
     # Sidebar
@@ -85,12 +74,13 @@ def show_upload_page():
     with col2:
         if st.button("🗑️ Reset Database", type="secondary"):
             with st.spinner("Resetting database..."):
-                result = make_api_request("/reset", method="GET")
-                if result and result.get('status') == 'success':
+                try:
+                    # Create a simple reset by recreating tables
+                    db_manager.create_tables()
                     st.success("✅ Database reset successfully!")
                     st.rerun()
-                else:
-                    st.error("❌ Failed to reset database")
+                except Exception as e:
+                    st.error(f"❌ Failed to reset database: {str(e)}")
     
     # File upload
     uploaded_file = st.file_uploader(
@@ -108,44 +98,59 @@ def show_upload_page():
         with col1:
             if st.button("📥 Ingest Data"):
                 with st.spinner("Ingesting CSV data..."):
-                    files = {"file": uploaded_file}
-                    result = make_api_request("/upload", method="POST", files=files)
-                    if result:
-                        st.success(f"✅ Ingested {result['processed_books']} books")
-                        st.json(result)
+                    # Save uploaded file temporarily
+                    with tempfile.NamedTemporaryFile(mode='wb', suffix='.csv', delete=False) as tmp_file:
+                        tmp_file.write(uploaded_file.getvalue())
+                        tmp_file_path = tmp_file.name
+                    
+                    try:
+                        result = ingester.ingest_csv(tmp_file_path)
+                        if result:
+                            st.success(f"✅ Ingested {result['processed_books']} books")
+                            st.json(result)
+                    except Exception as e:
+                        st.error(f"❌ Error ingesting data: {str(e)}")
+                    finally:
+                        # Clean up temp file
+                        os.unlink(tmp_file_path)
         
         with col2:
             if st.button("🔍 Enrich Metadata"):
                 with st.spinner("Enriching with Open Library data..."):
-                    result = make_api_request("/enrich", method="POST")
-                    if result:
-                        st.success(f"✅ Enriched {result['enriched']} books")
-                        st.json(result)
+                    try:
+                        result = enricher.enrich_all_books()
+                        if result:
+                            st.success(f"✅ Enriched {result['enriched']} books")
+                            st.json(result)
+                    except Exception as e:
+                        st.error(f"❌ Error enriching data: {str(e)}")
 
 def show_dashboard_page():
     st.header("📊 Dashboard")
     
     # Get statistics
-    stats_data = {}
-    stat_endpoints = [
-        ("ingestion", "📥 Ingestion", "total_books"),
-        ("enrichment", "🔍 Enrichment", "total_books"),
-    ]
+    col1, col2 = st.columns(2)
     
-    cols = st.columns(len(stat_endpoints))
-    for i, (endpoint, title, stat_key) in enumerate(stat_endpoints):
-        with cols[i]:
-            result = make_api_request(f"/stats/{endpoint}")
-            if result and result.get('success'):
-                stats = result.get('stats', {})
-                st.metric(title, stats.get(stat_key, 0))
-            else:
-                st.metric(title, "N/A")
+    with col1:
+        try:
+            ingestion_stats = ingester.get_ingestion_stats()
+            st.metric("📥 Ingestion", ingestion_stats.get('total_books', 0))
+        except:
+            st.metric("📥 Ingestion", "N/A")
+    
+    with col2:
+        try:
+            enrichment_stats = enricher.get_enrichment_stats()
+            st.metric("🔍 Enrichment", enrichment_stats.get('total_books', 0))
+        except:
+            st.metric("🔍 Enrichment", "N/A")
     
     # Get books data
-    books_result = make_api_request("/books")
+    books_result = db_manager.get_all_books()
     if books_result and isinstance(books_result, list):
-        books_df = pd.DataFrame(books_result)
+        # Convert SQLModel objects to dictionaries to avoid Pydantic compatibility issues
+        books_dicts = [sqlmodel_to_dict(book) for book in books_result]
+        books_df = pd.DataFrame(books_dicts)
     else:
         books_df = pd.DataFrame()
     
@@ -233,7 +238,7 @@ def show_insights_page():
     st.header("🧠 Literary Psychology Insights")
     
     # Check if insights can be generated
-    insights_stats = make_api_request("/stats/insights")
+    insights_stats = {"success": True, "stats": insights_generator.get_insights_stats()}
     if insights_stats and insights_stats.get('success'):
         stats = insights_stats['stats']
         
@@ -262,7 +267,7 @@ def show_insights_page():
             # Generate Insights button
             if st.button("🔮 Generate Insights"):
                 with st.spinner("Generating deep literary psychology insights..."):
-                    result = make_api_request("/insights", method="POST", data={})
+                    result = insights_generator.generate_insights()
                     if result and result.get('success'):
                         st.session_state['insights_result'] = result['insights']
                         st.session_state['insights_data_summary'] = result.get('data_summary', {})
@@ -276,7 +281,7 @@ def show_profile_analysis_page():
     st.header("👤 Personal Profile Analysis")
     
     # Check if profile insights can be generated
-    profile_stats = make_api_request("/stats/profile-insights")
+    profile_stats = {"success": True, "stats": profile_insights_generator.get_profile_insights_stats()}
     if profile_stats and profile_stats.get('success'):
         stats = profile_stats['stats']
         
@@ -305,7 +310,7 @@ def show_profile_analysis_page():
             # Generate Profile Analysis button
             if st.button("🔍 Analyze My Profile"):
                 with st.spinner("Analyzing your reading patterns for personal insights..."):
-                    result = make_api_request("/profile-insights", method="POST", data={})
+                    result = profile_insights_generator.generate_profile_insights()
                     if result and result.get('success'):
                         st.session_state['profile_insights_result'] = result['profile_insights']
                         st.session_state['profile_insights_data_summary'] = result.get('data_summary', {})
@@ -319,7 +324,7 @@ def show_comprehensive_analysis_page():
     st.header("🔮 Comprehensive Analysis")
     
     # Check if comprehensive analysis can be generated
-    analysis_stats = make_api_request("/stats/comprehensive-analysis")
+    analysis_stats = {"success": True, "stats": comprehensive_analyzer.get_analysis_stats()}
     if analysis_stats and analysis_stats.get('success'):
         stats = analysis_stats['stats']
         
@@ -368,7 +373,7 @@ def show_comprehensive_analysis_page():
             # Generate Comprehensive Analysis button
             if st.button("🔮 Generate Comprehensive Analysis"):
                 with st.spinner("Generating comprehensive analysis (this may take a moment)..."):
-                    result = make_api_request("/comprehensive-analysis", method="POST", data={})
+                    result = comprehensive_analyzer.generate_comprehensive_analysis()
                     if result and result.get('success'):
                         st.session_state['comprehensive_analysis_result'] = result['comprehensive_analysis']
                         st.session_state['comprehensive_analysis_sections'] = result.get('parsed_sections', {})
@@ -394,7 +399,7 @@ def show_recommendations_page():
     
     if st.button("🔍 Get AI Recommendations") and query:
         with st.spinner("Analyzing your reading history and generating personalized recommendations..."):
-            result = make_api_request(f"/recommend?q={query}&limit={limit}")
+            result = recommender.recommend_books(query, limit)
             if result and result.get('success'):
                 recommendations_text = result['recommendations']
                 
@@ -405,7 +410,7 @@ def show_recommendations_page():
     
     # Recommendation stats
     st.subheader("📊 Recommendation System Stats")
-    rec_stats = make_api_request("/stats/recommendations")
+    rec_stats = {"success": True, "stats": recommender.get_recommendation_stats()}
     if rec_stats and rec_stats.get('success'):
         stats = rec_stats['stats']
         
