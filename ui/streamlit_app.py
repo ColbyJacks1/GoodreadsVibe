@@ -30,7 +30,7 @@ def sqlmodel_to_dict(obj):
 def show_quick_navigation():
     """Show quick navigation buttons at the bottom of pages."""
     st.markdown("---")
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3 = st.columns(3)
     
     with col1:
         if st.button("📤 Upload",
@@ -51,13 +51,6 @@ def show_quick_navigation():
                     help="Get deep insights and recommendations",
                     use_container_width=True):
             st.session_state.selected_page = "🔮 Comprehensive Analysis"
-            st.rerun()
-    
-    with col4:
-        if st.button("📚 Individual Analysis",
-                    help="Analyze specific aspects of your reading",
-                    use_container_width=True):
-            st.session_state.selected_page = "📚 Individual Analysis"
             st.rerun()
 
 
@@ -90,26 +83,22 @@ def main():
     # Clean Sidebar Navigation
     st.sidebar.title("📚 Navigation")
     
-    # Simple list of all pages
-    all_pages = [
+    # Simplified list of main pages only
+    main_pages = [
         "📤 Upload", 
         "📊 Books and Stats", 
-        "🔮 Comprehensive Analysis", 
-        "📚 Individual Analysis", 
-        "🧠 Insights", 
-        "👤 Profile Analysis", 
-        "📚 Recommendations"
+        "🔮 Comprehensive Analysis"
     ]
     
     # Check if page was selected via main buttons
-    if 'selected_page' in st.session_state and st.session_state.selected_page in all_pages:
-        default_index = all_pages.index(st.session_state.selected_page)
+    if 'selected_page' in st.session_state and st.session_state.selected_page in main_pages:
+        default_index = main_pages.index(st.session_state.selected_page)
     else:
         default_index = 0
     
     page = st.sidebar.selectbox(
         "Choose a section:",
-        all_pages,
+        main_pages,
         index=default_index
     )
     
@@ -125,12 +114,6 @@ def main():
         show_books_and_stats_page()
     elif page_clean == "Comprehensive Analysis":
         show_comprehensive_analysis_page_parallel()
-    elif page_clean == "Individual Analysis":
-        show_insights_page()
-    elif page_clean == "Profile Analysis":
-        show_profile_analysis_page()
-    elif page_clean == "Recommendations":
-        show_recommendations_page()
 
 def show_upload_page():
     st.header("📤 Upload & Process")
