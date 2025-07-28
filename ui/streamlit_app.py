@@ -866,7 +866,7 @@ def show_comprehensive_analysis_page_parallel():
                 st.session_state.analysis_start_time = datetime.now()
                 st.session_state.pop('analysis_processing_started', None)
                 st.session_state.pop('last_refresh', None)
-                    st.rerun()
+                st.rerun()
         
         else:
             # Show generate button for manual trigger
