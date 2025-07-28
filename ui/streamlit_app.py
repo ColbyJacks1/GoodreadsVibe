@@ -779,6 +779,18 @@ def show_comprehensive_analysis_page_parallel():
     .main .block-container > div:not(:last-of-type) {
         display: none !important;
     }
+    /* Hide spinner overlay that's causing the grayed out effect */
+    .stSpinner {
+        display: none !important;
+    }
+    /* Remove any overlay effects */
+    .stApp > div[data-testid="stSpinner"] {
+        display: none !important;
+    }
+    /* Ensure no dimming effects */
+    .stApp > div[style*="opacity"] {
+        opacity: 1 !important;
+    }
     </style>
     <script>
     // Clear any lingering plotly elements and text
@@ -799,6 +811,20 @@ def show_comprehensive_analysis_page_parallel():
         headers.forEach(function(header) {
             if (!header.textContent.includes('Analyze Me')) {
                 header.style.display = 'none';
+            }
+        });
+        
+        // Hide any spinner overlays
+        var spinners = document.querySelectorAll('.stSpinner, [data-testid="stSpinner"]');
+        spinners.forEach(function(spinner) {
+            spinner.style.display = 'none';
+        });
+        
+        // Remove any opacity effects
+        var elements = document.querySelectorAll('*');
+        elements.forEach(function(el) {
+            if (el.style.opacity && el.style.opacity !== '1') {
+                el.style.opacity = '1';
             }
         });
     }, 100);
