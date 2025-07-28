@@ -105,114 +105,99 @@ def show_upload_page():
     if uploaded_file is not None:
         st.success(f"File uploaded: {uploaded_file.name}")
         
-        # Process buttons
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            if st.button("📥 Ingest Data"):
-                with st.spinner("Ingesting CSV data..."):
-                    # Save uploaded file temporarily
-                    with tempfile.NamedTemporaryFile(mode='wb', suffix='.csv', delete=False) as tmp_file:
-                        tmp_file.write(uploaded_file.getvalue())
-                        tmp_file_path = tmp_file.name
+        # Single process button
+        if st.button("🚀 Import & Process Data", type="primary", use_container_width=True):
+            with st.spinner("Processing your Goodreads data..."):
+                # Save uploaded file temporarily
+                with tempfile.NamedTemporaryFile(mode='wb', suffix='.csv', delete=False) as tmp_file:
+                    tmp_file.write(uploaded_file.getvalue())
+                    tmp_file_path = tmp_file.name
+                
+                try:
+                    # Step 1: Process CSV and store in session
+                    import pandas as pd
+                    df = pd.read_csv(tmp_file_path)
                     
-                    try:
-                        # Process CSV and store in session
-                        import pandas as pd
-                        df = pd.read_csv(tmp_file_path)
-                        
-                        # Clear existing books
-                        session_db_manager.clear_user_books()
-                        
-                        # Process each row
-                        processed_books = 0
-                        skipped_books = 0
-                        
-                        for index, row in df.iterrows():
-                            try:
-                                # Create book data
-                                book_data = {
-                                    'book_id': str(row.get('Book Id', f'book_{index}')),
-                                    'title': str(row.get('Title', 'Unknown Title')),
-                                    'author': str(row.get('Author', 'Unknown Author')),
-                                    'my_rating': int(row.get('My Rating', 0)) if pd.notna(row.get('My Rating')) else None,
-                                    'average_rating': float(row.get('Average Rating', 0)) if pd.notna(row.get('Average Rating')) else None,
-                                    'date_read': row.get('Date Read', None),
-                                    'date_added': row.get('Date Added', None),
-                                    'bookshelves': row.get('Bookshelves', None),
-                                    'my_review': row.get('My Review', None),
-                                    'publisher': row.get('Publisher', None),
-                                    'pages': int(row.get('Number of Pages', 0)) if pd.notna(row.get('Number of Pages')) else None,
-                                    'year_published': int(row.get('Original Publication Year', 0)) if pd.notna(row.get('Original Publication Year')) else None,
-                                    'isbn': row.get('ISBN', None),
-                                    'isbn13': row.get('ISBN13', None)
-                                }
-                                
-                                # Add to session
-                                session_db_manager.add_user_book(book_data)
-                                processed_books += 1
-                                
-                            except Exception as e:
-                                skipped_books += 1
-                                continue
-                        
-                        # Update stats
-                        user_books = session_db_manager.get_user_books()
-                        books_with_ratings = len([b for b in user_books if b.get('my_rating')])
-                        avg_rating = sum(b.get('my_rating', 0) for b in user_books if b.get('my_rating')) / books_with_ratings if books_with_ratings > 0 else 0
-                        
-                        st.session_state.user_stats = {
-                            'total_books': len(user_books),
-                            'processed_books': processed_books,
-                            'enriched_books': 0,  # Will be updated during enrichment
-                            'books_with_ratings': books_with_ratings,
-                            'average_rating': round(avg_rating, 2)
-                        }
-                        
-                        st.success(f"✅ Ingested {processed_books} books")
-                        st.json({
-                            'processed_books': processed_books,
-                            'skipped_books': skipped_books,
-                            'total_books': len(user_books)
-                        })
-                        
-                    except Exception as e:
-                        st.error(f"❌ Error ingesting data: {str(e)}")
-                    finally:
-                        # Clean up temp file
-                        os.unlink(tmp_file_path)
-        
-        with col2:
-            if st.button("🔍 Enrich Metadata"):
-                with st.spinner("Enriching with Open Library data..."):
-                    try:
-                        user_books = session_db_manager.get_user_books()
-                        if not user_books:
-                            st.warning("No books to enrich. Please ingest data first.")
-                            return
-                        
-                        # Simple enrichment simulation (in real app, you'd call Open Library API)
-                        enriched_count = 0
-                        for book in user_books:
-                            # Simulate enrichment
-                            if not book.get('description'):
-                                book['description'] = f"Enriched description for {book['title']}"
-                                book['genres'] = "Fiction, Literature"  # Placeholder
-                                enriched_count += 1
-                        
-                        # Update stats
-                        stats = st.session_state.user_stats
-                        stats['enriched_books'] = enriched_count
-                        st.session_state.user_stats = stats
-                        
-                        st.success(f"✅ Enriched {enriched_count} books")
-                        st.json({
-                            'enriched': enriched_count,
-                            'total_books': len(user_books)
-                        })
-                        
-                    except Exception as e:
-                        st.error(f"❌ Error enriching data: {str(e)}")
+                    # Clear existing books
+                    session_db_manager.clear_user_books()
+                    
+                    # Process each row
+                    processed_books = 0
+                    skipped_books = 0
+                    
+                    for index, row in df.iterrows():
+                        try:
+                            # Create book data
+                            book_data = {
+                                'book_id': str(row.get('Book Id', f'book_{index}')),
+                                'title': str(row.get('Title', 'Unknown Title')),
+                                'author': str(row.get('Author', 'Unknown Author')),
+                                'my_rating': int(row.get('My Rating', 0)) if pd.notna(row.get('My Rating')) else None,
+                                'average_rating': float(row.get('Average Rating', 0)) if pd.notna(row.get('Average Rating')) else None,
+                                'date_read': row.get('Date Read', None),
+                                'date_added': row.get('Date Added', None),
+                                'bookshelves': row.get('Bookshelves', None),
+                                'my_review': row.get('My Review', None),
+                                'publisher': row.get('Publisher', None),
+                                'pages': int(row.get('Number of Pages', 0)) if pd.notna(row.get('Number of Pages')) else None,
+                                'year_published': int(row.get('Original Publication Year', 0)) if pd.notna(row.get('Original Publication Year')) else None,
+                                'isbn': row.get('ISBN', None),
+                                'isbn13': row.get('ISBN13', None)
+                            }
+                            
+                            # Add to session
+                            session_db_manager.add_user_book(book_data)
+                            processed_books += 1
+                            
+                        except Exception as e:
+                            skipped_books += 1
+                            continue
+                    
+                    # Step 2: Enrich metadata
+                    user_books = session_db_manager.get_user_books()
+                    enriched_count = 0
+                    
+                    for book in user_books:
+                        # Simulate enrichment with additional metadata
+                        if not book.get('description'):
+                            book['description'] = f"Enriched description for {book['title']}"
+                            book['genres'] = "Fiction, Literature"  # Placeholder
+                            book['language'] = "English"  # Placeholder
+                            book['format'] = "Paperback"  # Placeholder
+                            enriched_count += 1
+                    
+                    # Update final stats
+                    books_with_ratings = len([b for b in user_books if b.get('my_rating')])
+                    avg_rating = sum(b.get('my_rating', 0) for b in user_books if b.get('my_rating')) / books_with_ratings if books_with_ratings > 0 else 0
+                    
+                    st.session_state.user_stats = {
+                        'total_books': len(user_books),
+                        'processed_books': processed_books,
+                        'enriched_books': enriched_count,
+                        'books_with_ratings': books_with_ratings,
+                        'average_rating': round(avg_rating, 2)
+                    }
+                    
+                    st.success(f"✅ Successfully processed {processed_books} books!")
+                    st.info(f"📊 Enriched {enriched_count} books with additional metadata")
+                    
+                    # Show summary
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("📚 Total Books", len(user_books))
+                    with col2:
+                        st.metric("⭐ Rated Books", books_with_ratings)
+                    with col3:
+                        st.metric("🔍 Enriched", enriched_count)
+                    
+                    if skipped_books > 0:
+                        st.warning(f"⚠️ Skipped {skipped_books} books due to formatting issues")
+                    
+                except Exception as e:
+                    st.error(f"❌ Error processing data: {str(e)}")
+                finally:
+                    # Clean up temp file
+                    os.unlink(tmp_file_path)
 
 def show_dashboard_page():
     st.header("📊 Dashboard")
