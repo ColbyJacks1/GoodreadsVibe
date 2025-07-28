@@ -425,6 +425,27 @@ def show_books_and_stats_page():
     else:
         st.info("📚 No books uploaded yet. Go to 'Upload & Process' to add your Goodreads data!")
     
+    # Call-to-action for deeper analysis
+    if user_books and len(user_books) > 0:
+        st.markdown("---")
+        st.subheader("🔮 Ready for Deeper Insights?")
+        st.write("You've seen your basic stats, but there's so much more to discover about your reading personality!")
+        
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            if st.button("🔮 Go to Analyze Me", type="primary", use_container_width=True):
+                st.session_state.selected_page = "🔮 Analyze Me"
+                st.rerun()
+        
+        st.write("**What you'll discover:**")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.write("• 😂 **Literary Roast** - Witty observations about your reading habits")
+            st.write("• 👤 **Personal Profile** - Deep analysis of your reading psychology")
+        with col2:
+            st.write("• 📚 **Recommendations** - Personalized book suggestions")
+            st.write("• 📖 **Literary Insights** - Psychological analysis of your choices")
+    
     # Quick navigation at bottom
     show_quick_navigation()
 
