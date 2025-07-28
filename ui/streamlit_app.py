@@ -760,8 +760,8 @@ def show_comprehensive_analysis_page_parallel():
     if not can_generate or (can_generate and st.session_state.get('analysis_status', 'not_started') == "not_started"):
         tab1, tab2, tab3, tab4 = st.tabs([
             "😂  ROAST ME  😂", 
-            "👤  PERSONAL PROFILE  👤", 
             "📚  RECOMMENDATIONS  📚", 
+            "👤  PERSONAL PROFILE  👤", 
             "📖  LITERARY INSIGHTS  📖"
         ])
         
@@ -772,13 +772,13 @@ def show_comprehensive_analysis_page_parallel():
         
         with tab2:
             st.info("🔄 **Pending Analysis**")
-            st.write("Your personal  analysis will appear here once analysis is complete.")
-            st.write("This will include deep insights about your personality, demographics, and reading psychology!")
+            st.write("Your personalized book recommendations will appear here once analysis is complete.")
+            st.write("This will include curated book suggestions based on your reading history!")
         
         with tab3:
             st.info("🔄 **Pending Analysis**")
-            st.write("Your personalized book recommendations will appear here once analysis is complete.")
-            st.write("This will include curated book suggestions based on your reading history!")
+            st.write("Your personal analysis will appear here once analysis is complete.")
+            st.write("This will include deep insights about your personality, demographics, and reading psychology!")
         
         with tab4:
             st.info("🔄 **Pending Analysis**")
@@ -820,8 +820,8 @@ def show_comprehensive_analysis_page_parallel():
             # Show all 4 tabs with processing placeholders
             tab1, tab2, tab3, tab4 = st.tabs([
                 "😂  ROAST ME  😂", 
-                "👤  PERSONAL PROFILE  👤", 
                 "📚  RECOMMENDATIONS  📚", 
+                "👤  PERSONAL PROFILE  👤", 
                 "📖  LITERARY INSIGHTS  📖"
             ])
             
@@ -831,11 +831,11 @@ def show_comprehensive_analysis_page_parallel():
             
             with tab2:
                 st.info("🔄 **Processing...**")
-                st.write("Your personal profile is being analyzed...")
+                st.write("Your recommendations are being created...")
             
             with tab3:
                 st.info("🔄 **Processing...**")
-                st.write("Your recommendations are being created...")
+                st.write("Your personal profile is being analyzed...")
             
             with tab4:
                 st.info("🔄 **Processing...**")
@@ -891,8 +891,8 @@ def show_comprehensive_analysis_page_parallel():
                 
                 tab1, tab2, tab3, tab4 = st.tabs([
                     "😂  ROAST ME  😂", 
-                    "👤  PERSONAL PROFILE  👤", 
                     "📚  RECOMMENDATIONS  📚", 
+                    "👤  PERSONAL PROFILE  👤", 
                     "📖  LITERARY INSIGHTS  📖"
                 ])
                 
@@ -903,14 +903,14 @@ def show_comprehensive_analysis_page_parallel():
                         st.warning("No humorous analysis available.")
                 
                 with tab2:
-                    st.info("🔄 **Processing...**")
-                    st.write("Your personal profile is being analyzed...")
-                
-                with tab3:
                     if sections.get('recommendations'):
                         st.markdown(sections['recommendations'])
                     else:
                         st.warning("No recommendations available.")
+                
+                with tab3:
+                    st.info("🔄 **Processing...**")
+                    st.write("Your personal profile is being analyzed...")
                 
                 with tab4:
                     st.info("🔄 **Processing...**")
@@ -965,8 +965,8 @@ def show_comprehensive_analysis_page_parallel():
                 
                 tab1, tab2, tab3, tab4 = st.tabs([
                     "😂  ROAST ME  😂", 
-                    "👤  PERSONAL PROFILE  👤", 
                     "📚  RECOMMENDATIONS  📚", 
+                    "👤  PERSONAL PROFILE  👤", 
                     "📖  LITERARY INSIGHTS  📖"
                 ])
                 
@@ -977,16 +977,16 @@ def show_comprehensive_analysis_page_parallel():
                         st.warning("No humorous analysis available.")
                 
                 with tab2:
-                    if sections.get('profile'):
-                        st.markdown(sections['profile'])
-                    else:
-                        st.warning("No profile analysis available.")
-                
-                with tab3:
                     if sections.get('recommendations'):
                         st.markdown(sections['recommendations'])
                     else:
                         st.warning("No recommendations available.")
+                
+                with tab3:
+                    if sections.get('profile'):
+                        st.markdown(sections['profile'])
+                    else:
+                        st.warning("No profile analysis available.")
                 
                 with tab4:
                     if sections.get('insights'):
