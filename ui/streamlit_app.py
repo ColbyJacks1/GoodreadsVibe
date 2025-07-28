@@ -809,7 +809,6 @@ def show_comprehensive_analysis_page_parallel():
         
         if analysis_status == "processing":
             # Show processing state
-            st.info("🔄 **Processing your comprehensive analysis...**")
             st.info("⏱️ **AI processing may take up to 2 minutes** - please be patient!")
             
             # Show all 4 tabs with processing placeholders
@@ -909,8 +908,7 @@ def show_comprehensive_analysis_page_parallel():
         
         elif analysis_status == "quick_completed":
             # Show quick analysis results immediately
-            st.success("✅ Quick analysis completed! Roast and Recommendations are ready! Profile and Insights in progress...")
-            st.info("⏱️ **AI processing may take up to 2 minutes** - please be patient!")
+            st.success("✅ Quick analysis completed! Profile and Insights in progress...")
             
             # Show all 4 tabs with quick results in first 2, processing in last 2
             if 'quick_analysis_sections' in st.session_state:
@@ -1110,6 +1108,10 @@ def show_comprehensive_analysis_page_parallel():
     else:
         st.warning(f"⚠️ Insufficient data for analysis")
         st.info("You need at least 5 books with 3 rated books to generate comprehensive analysis.")
+    
+    # Add horizontal spacer for better separation
+    st.markdown("---")
+    st.markdown("<br>", unsafe_allow_html=True)
     
     # Quick navigation at bottom
     show_quick_navigation()
