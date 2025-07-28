@@ -157,6 +157,14 @@ def main():
 def show_upload_page():
     st.header("📤 Upload & Process")
     
+    # Brief description of what users can expect
+    st.markdown("""
+    **What you can expect:**
+    1. **Upload your Goodreads data** - Export your library as CSV and upload it here
+    2. **View your stats and reading history** - See charts, timelines, and insights about your reading
+    3. **Get AI-powered analysis** - Discover your reading personality, get recommendations, and enjoy witty observations about your literary taste
+    """)
+    
     # Custom CSS to make the import button taller
     st.markdown("""
     <style>
