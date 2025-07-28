@@ -21,7 +21,7 @@ USER'S BOOKS:
 
 RESPONSE FORMAT:
 
-## HUMOROUS ROAST ANALYSIS
+## ROAST ME
 
 ### 🎭 Reader Summary
 [Write a hilariously accurate 2-3 sentence roast of their reading personality, combining wit with genuine insights. Be playfully sarcastic but not mean-spirited. Reference specific patterns from their data.]
