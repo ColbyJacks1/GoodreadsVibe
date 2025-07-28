@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-from .session_db import session_db_manager
+from .db import db_manager, LLMHistoryCreate
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ class ComprehensiveAnalyzer:
     """Generates comprehensive analysis including insights, profile, and recommendations."""
     
     def __init__(self):
-        self.db = session_db_manager
+        self.db = db_manager
         
         # Initialize Google Gemini
         api_key = os.getenv("GOOGLE_GEMINI_API_KEY")
@@ -44,24 +44,22 @@ class ComprehensiveAnalyzer:
         
         # Sort by rating (highest first) and date read (most recent first)
         sorted_books = sorted(books, 
-                             key=lambda x: (x.get('my_rating') or 0, x.get('date_read') or x.get('date_added')), 
+                             key=lambda x: (x.my_rating or 0, x.date_read or x.date_added), 
                              reverse=True)
         
         book_lines = []
         for book in sorted_books:
-            rating = book.get('my_rating') or "No rating"
-            date_read = book.get('date_read')
-            date_added = book.get('date_added')
-            date = date_read or date_added
-            date_str = date if isinstance(date, str) else "Unknown date"
+            rating = book.my_rating or "No rating"
+            date = book.date_read or book.date_added
+            date_str = date.strftime("%Y-%m-%d") if date else "Unknown date"
             
-            line = f"- {book.get('title', 'Unknown')} by {book.get('author', 'Unknown')} (Rating: {rating}, Read: {date_str})"
+            line = f"- {book.title} by {book.author} (Rating: {rating}, Read: {date_str})"
             
-            if book.get('genres'):
-                line += f" [Genres: {book['genres']}]"
+            if book.genres:
+                line += f" [Genres: {book.genres}]"
             
-            if book.get('my_review'):
-                line += f" - Review: {book['my_review'][:100]}..."
+            if book.my_review:
+                line += f" - Review: {book.my_review[:100]}..."
             
             book_lines.append(line)
         
@@ -71,10 +69,15 @@ class ComprehensiveAnalyzer:
         """Generate comprehensive analysis including insights, profile, and recommendations."""
         try:
             if not self.model:
+                db_manager.add_llm_history(LLMHistoryCreate(
+                    prompt="MODEL NOT AVAILABLE",
+                    response="Google Gemini model not available. Please set GOOGLE_GEMINI_API_KEY environment variable.",
+                    extra="{\"status\": \"error\"}"
+                ))
                 return {"error": "Google Gemini model not available. Please set GOOGLE_GEMINI_API_KEY environment variable.", "raw_response": "Google Gemini model not available. Please set GOOGLE_GEMINI_API_KEY environment variable."}
             
             # Get user's books
-            books = self.db.get_user_books()
+            books = self.db.get_all_books()
             if not books:
                 return {"error": "No books found"}
             
@@ -91,20 +94,15 @@ class ComprehensiveAnalyzer:
             if not response.text:
                 return {"error": "No response from LLM", "raw_response": ""}
             
-            # Log the interaction (session-based)
-            self.db.add_llm_history(
+            # Log the interaction
+            db_manager.add_llm_history(LLMHistoryCreate(
                 prompt="Comprehensive analysis request",
                 response=response.text,
                 extra=json.dumps({"status": "success", "analysis_type": "comprehensive"})
-            )
+            ))
             
             # Parse the response into sections
             parsed_sections = self._parse_comprehensive_response(response.text)
-            
-            # Debug: Log what sections were found
-            logger.info(f"Parsed sections: {list(parsed_sections.keys())}")
-            for section, content in parsed_sections.items():
-                logger.info(f"Section '{section}' length: {len(content)} chars")
             
             return {
                 "success": True,
@@ -113,17 +111,17 @@ class ComprehensiveAnalyzer:
                 "raw_response": response.text,
                 "data_summary": {
                     "total_books": len(books),
-                    "avg_rating": sum(b.get('my_rating', 0) for b in books if b.get('my_rating')) / len([b for b in books if b.get('my_rating')]) if any(b.get('my_rating') for b in books) else 0
+                    "avg_rating": sum(b.my_rating for b in books if b.my_rating) / len([b for b in books if b.my_rating]) if any(b.my_rating for b in books) else 0
                 }
             }
         
         except Exception as e:
             logger.error(f"Error generating comprehensive analysis: {str(e)}")
-            self.db.add_llm_history(
+            db_manager.add_llm_history(LLMHistoryCreate(
                 prompt="EXCEPTION",
                 response=str(e),
                 extra="{\"status\": \"error\"}"
-            )
+            ))
             return {"error": str(e), "raw_response": str(e)}
     
     def _parse_comprehensive_response(self, response_text: str) -> Dict[str, str]:
@@ -141,30 +139,28 @@ class ComprehensiveAnalyzer:
         current_content = []
         
         for line in lines:
-            # Check for section headers (case insensitive and flexible)
-            line_upper = line.upper().strip()
-            
-            if "LITERARY PSYCHOLOGY INSIGHTS" in line_upper:
+            # Check for section headers
+            if "## LITERARY PSYCHOLOGY INSIGHTS" in line:
                 if current_section and current_content:
                     sections[current_section] = '\n'.join(current_content)
                 current_section = "insights"
                 current_content = [line]
-            elif "PERSONAL PROFILE ANALYSIS" in line_upper:
+            elif "## PERSONAL PROFILE ANALYSIS" in line:
                 if current_section and current_content:
                     sections[current_section] = '\n'.join(current_content)
                 current_section = "profile"
                 current_content = [line]
-            elif "PERSONALIZED" in line_upper and "RECOMMENDATION" in line_upper:
+            elif "## PERSONALIZED RECOMMENDATIONS" in line:
                 if current_section and current_content:
                     sections[current_section] = '\n'.join(current_content)
                 current_section = "recommendations"
                 current_content = [line]
-            elif "HUMOROUS" in line_upper and "ROAST" in line_upper:
+            elif "## HUMOROUS ROAST ANALYSIS" in line:
                 if current_section and current_content:
                     sections[current_section] = '\n'.join(current_content)
                 current_section = "humorous"
                 current_content = [line]
-            elif "ANALYSIS SUMMARY" in line_upper or line_upper.startswith("---"):
+            elif "## ANALYSIS SUMMARY" in line:
                 # End of sections, add final section
                 if current_section and current_content:
                     sections[current_section] = '\n'.join(current_content)
@@ -176,34 +172,13 @@ class ComprehensiveAnalyzer:
         if current_section and current_content:
             sections[current_section] = '\n'.join(current_content)
         
-        # Fallback: If recommendations section is empty but profile section is very long,
-        # try to split the profile section on "PERSONALIZED" or "RECOMMENDATION" keywords
-        if not sections.get("recommendations") and sections.get("profile"):
-            profile_content = sections["profile"]
-            if "PERSONALIZED" in profile_content.upper() or "RECOMMENDATION" in profile_content.upper():
-                # Try to split the profile section
-                profile_lines = profile_content.split('\n')
-                recommendations_start = -1
-                
-                for i, line in enumerate(profile_lines):
-                    line_upper = line.upper()
-                    if ("PERSONALIZED" in line_upper and "RECOMMENDATION" in line_upper) or \
-                       ("BOOK" in line_upper and "RECOMMENDATION" in line_upper):
-                        recommendations_start = i
-                        break
-                
-                if recommendations_start > 0:
-                    # Split the content
-                    sections["profile"] = '\n'.join(profile_lines[:recommendations_start])
-                    sections["recommendations"] = '\n'.join(profile_lines[recommendations_start:])
-        
 
         
         return sections
     
     def get_analysis_stats(self) -> Dict[str, Any]:
         """Get statistics about the comprehensive analysis capability."""
-        books = self.db.get_user_books()
+        books = self.db.get_all_books()
         
         if not books:
             return {
@@ -213,7 +188,7 @@ class ComprehensiveAnalyzer:
             }
         
         # Check if we have enough data for meaningful analysis
-        books_with_ratings = [book for book in books if book.get('my_rating')]
+        books_with_ratings = [book for book in books if book.my_rating]
         
         can_generate = (
             len(books) >= 5 and

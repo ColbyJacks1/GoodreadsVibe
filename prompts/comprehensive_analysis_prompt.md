@@ -132,17 +132,22 @@ Write 2-3 predictions about their future reading/life based on their data, writt
 Based on your reading patterns, here are 3-5 book recommendations:
 
 ### 1. [Book Title] by [Author]
-- **Why this book:** [2-3 sentences explaining why it's perfect for them]
+- **Why this book:** [1-3 sentences explaining why it's perfect for them]
 - **Connection to your reading:** [How it relates to their reading history]
 - **Themes:** [Key themes or topics]
 
 ### 2. [Book Title] by [Author]
-- **Why this book:** [2-3 sentences explaining why it's perfect for them]
+- **Why this book:** [1-3 sentences explaining why it's perfect for them]
 - **Connection to your reading:** [How it relates to their reading history]
 - **Themes:** [Key themes or topics]
 
 ### 3. [Book Title] by [Author]
-- **Why this book:** [2-3 sentences explaining why it's perfect for them]
+- **Why this book:** [1-3 sentences explaining why it's perfect for them]
+- **Connection to your reading:** [How it relates to their reading history]
+- **Themes:** [Key themes or topics]
+
+### 3. [Book Title] by [Author]
+- **Why this book:** [1-3 sentences explaining why it's perfect for them]
 - **Connection to your reading:** [How it relates to their reading history]
 - **Themes:** [Key themes or topics]
 
