@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional
 from pathlib import Path
 import pandas as pd
+import re
 
 from .db import db_manager, BookCreate
 
@@ -13,11 +14,112 @@ from .db import db_manager, BookCreate
 logger = logging.getLogger(__name__)
 
 
+class GenreNormalizer:
+    """Normalizes inconsistent Goodreads genres into standardized categories."""
+    
+    def __init__(self):
+        # Define genre mapping rules
+        self.genre_mappings = {
+            # Fiction categories
+            'fiction': ['fiction', 'general', 'literary-fiction', 'literary', 'contemporary-fiction'],
+            'science_fiction': ['science-fiction', 'sci-fi', 'scifi', 'science fiction', 'sf'],
+            'fantasy': ['fantasy', 'epic-fantasy', 'high-fantasy', 'urban-fantasy', 'dark-fantasy'],
+            'mystery': ['mystery', 'detective', 'crime', 'thriller', 'suspense'],
+            'romance': ['romance', 'romantic', 'love-story', 'chick-lit', 'women-fiction'],
+            'historical_fiction': ['historical-fiction', 'historical', 'period-fiction'],
+            'young_adult': ['young-adult', 'ya', 'teen', 'adolescent', 'juvenile-fiction'],
+            'children': ['children', 'childrens', 'kids', 'middle-grade', 'juvenile'],
+            'classics': ['classics', 'classic', 'literary-classics', 'canon'],
+            
+            # Non-fiction categories
+            'non_fiction': ['non-fiction', 'nonfiction', 'general-non-fiction'],
+            'biography': ['biography', 'biographies', 'memoir', 'autobiography'],
+            'history': ['history', 'historical', 'world-war', '1939-1945', 'military-history'],
+            'philosophy': ['philosophy', 'philosophical', 'ethics', 'metaphysics'],
+            'science': ['science', 'scientific', 'physics', 'chemistry', 'biology'],
+            'psychology': ['psychology', 'psychological', 'psych', 'mental-health'],
+            'self_help': ['self-help', 'selfhelp', 'personal-development', 'motivation'],
+            'business': ['business', 'economics', 'finance', 'management', 'leadership'],
+            'politics': ['politics', 'political', 'government', 'current-events'],
+            'religion': ['religion', 'religious', 'spirituality', 'theology'],
+            'travel': ['travel', 'travelogue', 'adventure', 'exploration'],
+            'cookbook': ['cookbook', 'cooking', 'food', 'recipes', 'culinary'],
+            'art': ['art', 'artistic', 'design', 'photography', 'architecture'],
+            'education': ['education', 'academic', 'textbook', 'reference'],
+            
+            # Special categories
+            'poetry': ['poetry', 'poems', 'verse'],
+            'drama': ['drama', 'plays', 'theater', 'theatre'],
+            'comics': ['comics', 'graphic-novel', 'manga', 'superhero'],
+            'horror': ['horror', 'scary', 'supernatural', 'paranormal'],
+            'western': ['western', 'cowboy', 'wild-west'],
+            'war': ['war', 'military', 'battle', 'conflict'],
+            'adventure': ['adventure', 'action', 'exploration'],
+            'satire': ['satire', 'humor', 'comedy', 'funny'],
+            'dystopian': ['dystopian', 'dystopia', 'post-apocalyptic'],
+            'steampunk': ['steampunk', 'cyberpunk', 'alternate-history'],
+        }
+        
+        # Create reverse mapping for quick lookup
+        self.reverse_mappings = {}
+        for normalized_genre, variants in self.genre_mappings.items():
+            for variant in variants:
+                self.reverse_mappings[variant.lower()] = normalized_genre
+    
+    def normalize_genre(self, genre_text: str) -> Optional[str]:
+        """Normalize a single genre text to a standard category."""
+        if not genre_text:
+            return None
+        
+        # Clean the genre text
+        cleaned = re.sub(r'[^\w\s-]', '', genre_text.lower().strip())
+        
+        # Direct match
+        if cleaned in self.reverse_mappings:
+            return self.reverse_mappings[cleaned]
+        
+        # Partial match (check if any variant is contained in the text)
+        for variant, normalized in self.reverse_mappings.items():
+            if variant in cleaned or cleaned in variant:
+                return normalized
+        
+        # Check for common patterns
+        if any(word in cleaned for word in ['fiction', 'novel']):
+            return 'fiction'
+        elif any(word in cleaned for word in ['non-fiction', 'nonfiction']):
+            return 'non_fiction'
+        elif any(word in cleaned for word in ['classic', 'canon']):
+            return 'classics'
+        elif any(word in cleaned for word in ['young', 'teen', 'ya']):
+            return 'young_adult'
+        elif any(word in cleaned for word in ['child', 'kid']):
+            return 'children'
+        
+        return None
+    
+    def normalize_bookshelves(self, bookshelves: str) -> List[str]:
+        """Normalize bookshelves string to a list of standardized genres."""
+        if not bookshelves:
+            return []
+        
+        # Split by common delimiters
+        genres = re.split(r'[,;|]', bookshelves)
+        normalized_genres = []
+        
+        for genre in genres:
+            normalized = self.normalize_genre(genre.strip())
+            if normalized and normalized not in normalized_genres:
+                normalized_genres.append(normalized)
+        
+        return normalized_genres
+
+
 class GoodreadsIngester:
     """Handles ingestion of Goodreads CSV data."""
     
     def __init__(self):
         self.db = db_manager
+        self.genre_normalizer = GenreNormalizer()
     
     def parse_date(self, date_str) -> Optional[datetime]:
         """Parse date string from Goodreads format."""
@@ -78,6 +180,11 @@ class GoodreadsIngester:
     
     def process_csv_row(self, row: Dict[str, Any]) -> BookCreate:
         """Process a single CSV row into a BookCreate object."""
+        # Normalize genres from bookshelves
+        bookshelves = self.clean_text(row.get('Bookshelves', ''))
+        normalized_genres = self.genre_normalizer.normalize_bookshelves(bookshelves or '')
+        genres_str = ', '.join(normalized_genres) if normalized_genres else None
+        
         return BookCreate(
             book_id=str(row.get('Book Id', '')),
             title=self.clean_text(row.get('Title', '')),
@@ -92,8 +199,9 @@ class GoodreadsIngester:
             original_publication_year=self.parse_year(row.get('Original Publication Year', '')),
             date_read=self.parse_date(row.get('Date Read', '')),
             date_added=self.parse_date(row.get('Date Added', '')),
-            bookshelves=self.clean_text(row.get('Bookshelves', '')),
-            my_review=self.clean_text(row.get('My Review', ''))
+            bookshelves=bookshelves,  # Keep original for reference
+            my_review=self.clean_text(row.get('My Review', '')),
+            genres=genres_str  # Add normalized genres
         )
     
     def ingest_csv(self, file_path: str) -> Dict[str, Any]:
@@ -185,14 +293,18 @@ class GoodreadsIngester:
         for rating in ratings:
             rating_dist[rating] = rating_dist.get(rating, 0) + 1
         
-        # Genre distribution (from bookshelves)
+        # Genre distribution (using normalized genres)
         genre_dist = {}
         for book in books:
-            if book.bookshelves:
-                genres = [g.strip() for g in book.bookshelves.split(',')]
+            if book.genres:  # Use the normalized genres field
+                genres = [g.strip() for g in book.genres.split(',')]
                 for genre in genres:
                     if genre:
                         genre_dist[genre] = genre_dist.get(genre, 0) + 1
+            elif book.bookshelves:  # Fallback to bookshelves if genres not set
+                normalized_genres = self.genre_normalizer.normalize_bookshelves(book.bookshelves)
+                for genre in normalized_genres:
+                    genre_dist[genre] = genre_dist.get(genre, 0) + 1
         
         # Author distribution
         author_dist = {}

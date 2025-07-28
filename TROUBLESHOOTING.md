@@ -58,6 +58,7 @@ poetry install
 1. Delete the database file:
    ```bash
    rm embed_data.sqlite
+rm -rf __pycache__
    ```
 
 2. Recreate the sample database:
@@ -78,7 +79,7 @@ poetry install
 2. Edit `.env` and add your API keys:
    ```
    OPENAI_API_KEY=your_openai_key_here
-   GOOGLE_API_KEY=your_google_key_here
+   GOOGLE_GEMINI_API_KEY=your_google_gemini_key_here
    ```
 
 ### 7. Port Conflicts

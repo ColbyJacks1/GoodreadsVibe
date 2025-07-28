@@ -59,7 +59,7 @@ def main():
     st.sidebar.title("Navigation")
     page = st.sidebar.selectbox(
         "Choose a page",
-        ["Upload & Process", "Dashboard", "Insights", "Recommendations"]
+        ["Upload & Process", "Dashboard", "Insights", "Profile Analysis", "Recommendations"]
     )
     
     if page == "Upload & Process":
@@ -68,6 +68,8 @@ def main():
         show_dashboard_page()
     elif page == "Insights":
         show_insights_page()
+    elif page == "Profile Analysis":
+        show_profile_analysis_page()
     elif page == "Recommendations":
         show_recommendations_page()
 
@@ -221,100 +223,13 @@ def show_dashboard_page():
                     )
                     st.plotly_chart(fig, use_container_width=True)
 
-def show_clusters_page():
-    st.header("🎯 Book Clusters")
-    
-    # Get clustering stats
-    cluster_stats = make_api_request("/stats/clustering")
-    if cluster_stats and cluster_stats.get('success'):
-        stats = cluster_stats['stats']
-        st.metric("Total Books", stats.get('total_books', 0))
-        st.metric("Clustered Books", stats.get('clustered_books', 0))
-        st.metric("Number of Clusters", stats.get('num_clusters', 0))
-    
-    # Get books with clustering data
-    books_result = make_api_request("/books")
-    if books_result:
-        books_df = pd.DataFrame(books_result)
-        
-        # Filter books with clustering data
-        clustered_df = books_df[
-            (books_df['cluster_id'].notna()) & 
-            (books_df['umap_x'].notna()) & 
-            (books_df['umap_y'].notna())
-        ]
-        
-        if not clustered_df.empty:
-            st.subheader("📊 Cluster Visualization")
-            
-            # Create scatter plot
-            fig = px.scatter(
-                clustered_df,
-                x='umap_x',
-                y='umap_y',
-                color='cluster_id',
-                hover_data=['title', 'author', 'my_rating'],
-                title="Book Clusters (UMAP Projection)",
-                labels={'umap_x': 'UMAP X', 'umap_y': 'UMAP Y'}
-            )
-            st.plotly_chart(fig, use_container_width=True)
-            
-            # Cluster details
-            st.subheader("📋 Cluster Details")
-            cluster_exemplars = make_api_request("/clusters/exemplars")
-            if cluster_exemplars and cluster_exemplars.get('success'):
-                exemplars = cluster_exemplars['exemplars']
-                
-                for cluster_id, books in exemplars.items():
-                    with st.expander(f"Cluster {cluster_id} ({len(books)} books)"):
-                        for book in books:
-                            st.write(f"**{book['title']}** by {book['author']}")
-                            if book.get('rating'):
-                                st.write(f"Rating: {'⭐' * book['rating']}")
-                            if book.get('genres'):
-                                st.write(f"Genres: {book['genres']}")
-                            st.write("---")
 
-PROMPT_FILE = os.path.join(os.path.dirname(__file__), '../prompts/insight_prompt.md')
 
-def load_default_prompt():
-    with open(PROMPT_FILE, 'r') as f:
-        return f.read()
+
 
 def show_insights_page():
     st.header("🧠 Literary Psychology Insights")
     
-    # Prompt editor section
-    if 'prompt_templates' not in st.session_state:
-        st.session_state['prompt_templates'] = {}
-    if 'current_prompt' not in st.session_state:
-        st.session_state['current_prompt'] = load_default_prompt()
-    if 'prompt_name' not in st.session_state:
-        st.session_state['prompt_name'] = 'Default'
-
-    st.subheader("📝 Prompt Editor")
-    prompt_name = st.text_input("Prompt Name", st.session_state['prompt_name'])
-    prompt_text = st.text_area("Prompt Template", st.session_state['current_prompt'], height=300, key="prompt_text_area")
-    col_save, col_load, col_reset = st.columns([1,1,1])
-    with col_save:
-        if st.button("💾 Save Prompt"):
-            st.session_state['prompt_templates'][prompt_name] = prompt_text
-            st.session_state['prompt_name'] = prompt_name
-            st.session_state['current_prompt'] = prompt_text
-            st.success(f"Prompt '{prompt_name}' saved.")
-    with col_load:
-        if st.button("📂 Load Prompt") and prompt_name in st.session_state['prompt_templates']:
-            st.session_state['current_prompt'] = st.session_state['prompt_templates'][prompt_name]
-            st.session_state['prompt_name'] = prompt_name
-            st.rerun()
-    with col_reset:
-        if st.button("🔄 Reset to Default"):
-            st.session_state['current_prompt'] = load_default_prompt()
-            st.session_state['prompt_name'] = 'Default'
-            st.rerun()
-    if st.session_state['prompt_templates']:
-        st.markdown("**Saved Prompts:** " + ", ".join(st.session_state['prompt_templates'].keys()))
-
     # Check if insights can be generated
     insights_stats = make_api_request("/stats/insights")
     if insights_stats and insights_stats.get('success'):
@@ -327,13 +242,13 @@ def show_insights_page():
             st.metric("Books with Ratings", stats.get('books_with_ratings', 0))
         
         if stats.get('can_generate_insights'):
-            # Remove clustering toggle
             # Add Clear Insights button
             if 'insights_result' in st.session_state or 'insights_raw_response' in st.session_state:
                 if st.button("🧹 Clear Insights"):
                     st.session_state.pop('insights_result', None)
                     st.session_state.pop('insights_raw_response', None)
                     st.rerun()
+            
             # Show stored insights if present
             if 'insights_result' in st.session_state or 'insights_raw_response' in st.session_state:
                 st.success("✨ Insights generated successfully!")
@@ -342,10 +257,11 @@ def show_insights_page():
                     st.markdown(st.session_state['insights_raw_response'])
                 else:
                     st.warning("No LLM output available.")
-            # Always show Generate Insights button
+            
+            # Generate Insights button
             if st.button("🔮 Generate Insights"):
                 with st.spinner("Generating deep literary psychology insights..."):
-                    result = make_api_request("/insights", method="POST", data={"prompt": st.session_state['current_prompt']})
+                    result = make_api_request("/insights", method="POST", data={})
                     if result and result.get('success'):
                         st.session_state['insights_result'] = result['insights']
                         st.session_state['insights_raw_response'] = result.get('raw_response', '')
@@ -354,6 +270,51 @@ def show_insights_page():
         else:
             st.warning(f"⚠️ {stats.get('reason', 'Insufficient data for insights')}")
             st.info("You need at least 5 books with ratings to generate insights.")
+
+
+def show_profile_analysis_page():
+    st.header("👤 Personal Profile Analysis")
+    
+    # Check if profile insights can be generated
+    profile_stats = make_api_request("/stats/profile-insights")
+    if profile_stats and profile_stats.get('success'):
+        stats = profile_stats['stats']
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("Total Books", stats.get('total_books', 0))
+        with col2:
+            st.metric("Books with Ratings", stats.get('books_with_ratings', 0))
+        
+        if stats.get('can_generate_profile'):
+            # Add Clear Profile Insights button
+            if 'profile_insights_result' in st.session_state or 'profile_insights_raw_response' in st.session_state:
+                if st.button("🧹 Clear Profile Analysis"):
+                    st.session_state.pop('profile_insights_result', None)
+                    st.session_state.pop('profile_insights_raw_response', None)
+                    st.rerun()
+            
+            # Show stored profile insights if present
+            if 'profile_insights_result' in st.session_state or 'profile_insights_raw_response' in st.session_state:
+                st.success("✨ Profile analysis completed successfully!")
+                if 'profile_insights_raw_response' in st.session_state and st.session_state['profile_insights_raw_response']:
+                    st.subheader("📊 Your Personal Profile")
+                    st.markdown(st.session_state['profile_insights_raw_response'])
+                else:
+                    st.warning("No profile analysis available.")
+            
+            # Generate Profile Analysis button
+            if st.button("🔍 Analyze My Profile"):
+                with st.spinner("Analyzing your reading patterns for personal insights..."):
+                    result = make_api_request("/profile-insights", method="POST", data={})
+                    if result and result.get('success'):
+                        st.session_state['profile_insights_result'] = result['profile_insights']
+                        st.session_state['profile_insights_raw_response'] = result.get('raw_response', '')
+                        st.session_state['profile_insights_data_summary'] = result.get('data_summary', {})
+                        st.rerun()
+        else:
+            st.warning(f"⚠️ {stats.get('reason', 'Insufficient data for profile analysis')}")
+            st.info("You need at least 10 books with 5 rated books to generate a profile analysis.")
 
 def show_recommendations_page():
     st.header("📚 Book Recommendations")
@@ -390,30 +351,25 @@ def show_recommendations_page():
                                 st.write(f"**Year:** {rec['year_published']}")
                         
                         with col2:
-                            st.write(f"**Score:** {rec['score']:.3f}")
-                            st.write(f"**Similarity:** {rec['cosine_similarity']:.3f}")
+                            if rec.get('relevance_score'):
+                                st.write(f"**Relevance Score:** {rec['relevance_score']:.3f}")
+                            if rec.get('average_rating'):
+                                st.write(f"**Average Rating:** {rec['average_rating']:.1f}")
                             if rec.get('rating'):
-                                st.write(f"**Rating:** {'⭐' * rec['rating']}")
+                                st.write(f"**Your Rating:** {'⭐' * rec['rating']}")
                             
-                            # Show shared keywords
-                            if rec.get('shared_keywords'):
-                                st.write(f"**Shared keywords:** {', '.join(rec['shared_keywords'])}")
+                            # Show themes
+                            if rec.get('themes'):
+                                st.write(f"**Themes:** {', '.join(rec['themes'])}")
                         
                         # Recommendation explanation
                         if st.button(f"Why this recommendation?", key=f"explain_{i}"):
-                            # Create simple explanation based on available data
-                            explanation_parts = []
-                            if rec.get('cosine_similarity', 0) > 0.6:
-                                explanation_parts.append("Similar to your query")
-                            if rec.get('rating') and rec['rating'] >= 4:
-                                explanation_parts.append("Highly rated")
-                            if rec.get('shared_keywords'):
-                                explanation_parts.append(f"Shares keywords: {', '.join(rec['shared_keywords'])}")
-                            if rec.get('genres'):
-                                explanation_parts.append(f"Genre: {rec['genres']}")
-                            
-                            explanation = " | ".join(explanation_parts) if explanation_parts else "Recommended based on similarity and rating"
-                            st.info(explanation)
+                            if rec.get('explanation'):
+                                st.info(rec['explanation'])
+                            elif rec.get('connections'):
+                                st.info(rec['connections'])
+                            else:
+                                st.info("Recommended based on your reading preferences and query analysis")
     
     # Recommendation stats
     st.subheader("📊 Recommendation System Stats")
@@ -421,13 +377,69 @@ def show_recommendations_page():
     if rec_stats and rec_stats.get('success'):
         stats = rec_stats['stats']
         
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.metric("Total Books", stats.get('total_books', 0))
         with col2:
-            st.metric("Books with Embeddings", stats.get('books_with_embeddings', 0))
+            st.metric("Rated Books", stats.get('rated_books', 0))
         with col3:
-            st.metric("Embedding Rate", f"{stats.get('embedding_rate', 0)}%")
+            st.metric("Average Rating", f"{stats.get('average_rating', 0):.1f}")
+        with col4:
+            model_status = "✅ Available" if stats.get('model_available', False) else "❌ Unavailable"
+            st.metric("AI Model", model_status)
+    
+    # Reading preferences analysis
+    st.subheader("🧠 Reading Preferences Analysis")
+    if st.button("🔍 Analyze My Reading Preferences"):
+        with st.spinner("Analyzing your reading patterns..."):
+            analysis_result = make_api_request("/recommendations/preferences")
+            if analysis_result and analysis_result.get('success'):
+                analysis = analysis_result.get('analysis', {})
+                
+                if 'error' not in analysis:
+                    # Display analysis results
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        if 'genre_analysis' in analysis:
+                            st.write("**Favorite Genres:**")
+                            genres = analysis['genre_analysis'].get('favorite_genres', [])
+                            for genre in genres[:5]:
+                                st.write(f"• {genre}")
+                        
+                        if 'author_analysis' in analysis:
+                            st.write("**Favorite Authors:**")
+                            authors = analysis['author_analysis'].get('favorite_authors', [])
+                            for author in authors[:5]:
+                                st.write(f"• {author}")
+                    
+                    with col2:
+                        if 'rating_analysis' in analysis:
+                            avg_rating = analysis['rating_analysis'].get('average_rating', 0)
+                            st.write(f"**Average Rating:** {avg_rating:.1f}")
+                        
+                        if 'recommendations' in analysis:
+                            st.write("**Suggested Genres:**")
+                            suggested_genres = analysis['recommendations'].get('suggested_genres', [])
+                            for genre in suggested_genres[:3]:
+                                st.write(f"• {genre}")
+                    
+                    # Show detailed analysis
+                    if 'genre_analysis' in analysis and analysis['genre_analysis'].get('genre_patterns'):
+                        st.write("**Genre Patterns:**")
+                        st.write(analysis['genre_analysis']['genre_patterns'])
+                    
+                    if 'author_analysis' in analysis and analysis['author_analysis'].get('author_patterns'):
+                        st.write("**Author Patterns:**")
+                        st.write(analysis['author_analysis']['author_patterns'])
+                    
+                    if 'timeline_analysis' in analysis and analysis['timeline_analysis'].get('reading_pace'):
+                        st.write("**Reading Pace:**")
+                        st.write(analysis['timeline_analysis']['reading_pace'])
+                else:
+                    st.error(f"Analysis failed: {analysis.get('error', 'Unknown error')}")
+            else:
+                st.error("Failed to analyze reading preferences")
 
 if __name__ == "__main__":
     main() 

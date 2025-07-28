@@ -5,7 +5,6 @@ from typing import Optional, List
 from datetime import datetime
 from sqlmodel import SQLModel, Field, Session, create_engine, select
 from pydantic import BaseModel
-import numpy as np
 
 
 class Book(SQLModel, table=True):
@@ -63,6 +62,7 @@ class BookCreate(BaseModel):
     date_added: Optional[datetime] = None
     bookshelves: Optional[str] = None
     my_review: Optional[str] = None
+    genres: Optional[str] = None
 
 
 class BookUpdate(BaseModel):
@@ -73,11 +73,6 @@ class BookUpdate(BaseModel):
     subjects: Optional[str] = None
     genres: Optional[str] = None
     language: Optional[str] = None
-    embedding: Optional[str] = None
-    cluster_id: Optional[int] = None
-    centroid_distance: Optional[float] = None
-    umap_x: Optional[float] = None
-    umap_y: Optional[float] = None
 
 
 class ClusterStats(BaseModel):
@@ -143,10 +138,9 @@ class DatabaseManager:
             return list(session.exec(statement))
     
     def get_books_by_cluster(self, cluster_id: int) -> List[Book]:
-        """Get all books in a cluster."""
-        with self.get_session() as session:
-            statement = select(Book).where(Book.cluster_id == cluster_id)
-            return list(session.exec(statement))
+        """Get all books in a cluster. (Clustering is no longer used)"""
+        # Return empty list since clustering is disabled
+        return []
     
     def update_book(self, book_id: str, update_data: BookUpdate) -> Optional[Book]:
         """Update a book."""
@@ -162,63 +156,9 @@ class DatabaseManager:
             return book
     
     def get_cluster_stats(self) -> List[ClusterStats]:
-        """Get statistics for all clusters."""
-        with self.get_session() as session:
-            books = self.get_all_books()
-            clusters = {}
-            
-            for book in books:
-                if book.cluster_id is not None:
-                    if book.cluster_id not in clusters:
-                        clusters[book.cluster_id] = {
-                            'books': [],
-                            'ratings': [],
-                            'genres': [],
-                            'authors': []
-                        }
-                    
-                    clusters[book.cluster_id]['books'].append(book)
-                    if book.my_rating:
-                        clusters[book.cluster_id]['ratings'].append(book.my_rating)
-                    if book.genres:
-                        clusters[book.cluster_id]['genres'].extend(book.genres.split(', '))
-                    if book.author:
-                        clusters[book.cluster_id]['authors'].append(book.author)
-            
-            stats = []
-            for cluster_id, data in clusters.items():
-                # Get top genres
-                genre_counts = {}
-                for genre in data['genres']:
-                    genre_counts[genre] = genre_counts.get(genre, 0) + 1
-                top_genres = sorted(genre_counts.items(), key=lambda x: x[1], reverse=True)[:5]
-                top_genres = [genre for genre, _ in top_genres]
-                
-                # Get top authors
-                author_counts = {}
-                for author in data['authors']:
-                    author_counts[author] = author_counts.get(author, 0) + 1
-                top_authors = sorted(author_counts.items(), key=lambda x: x[1], reverse=True)[:5]
-                top_authors = [author for author, _ in top_authors]
-                
-                # Get exemplar books (highest rated)
-                exemplar_books = sorted(data['books'], key=lambda x: x.my_rating or 0, reverse=True)[:3]
-                exemplar_titles = [book.title for book in exemplar_books]
-                
-                # Calculate average rating
-                avg_rating = np.mean(data['ratings']) if data['ratings'] else 0.0
-                
-                stats.append(ClusterStats(
-                    cluster_id=cluster_id,
-                    size=len(data['books']),
-                    avg_rating=avg_rating,
-                    top_genres=top_genres,
-                    top_authors=top_authors,
-                    exemplar_books=exemplar_titles,
-                    centroid_embedding=[]  # Will be filled by clustering module
-                ))
-            
-            return stats
+        """Get statistics for all clusters. (Clustering is no longer used)"""
+        # Return empty list since clustering is disabled
+        return []
 
     def add_llm_history(self, history_data: LLMHistoryCreate) -> LLMHistory:
         """Add a new LLM prompt/response record to the database."""

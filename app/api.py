@@ -14,9 +14,9 @@ import uvicorn
 from .db import db_manager
 from .ingest import ingester
 from .enrich import enricher
-from .embed import embedding_generator
 from .cluster import clusterer
 from .insights import insights_generator
+from .profile_insights import profile_insights_generator
 from .recommend import recommender
 from sqlmodel import SQLModel
 
@@ -64,12 +64,7 @@ class EnrichmentResponse(BaseModel):
     errors: int
 
 
-class EmbeddingResponse(BaseModel):
-    success: bool
-    total_books: int
-    embedded: int
-    skipped: int
-    errors: int
+
 
 
 class ClusteringResponse(BaseModel):
@@ -84,6 +79,14 @@ class ClusteringResponse(BaseModel):
 class InsightsResponse(BaseModel):
     success: bool
     insights: Optional[Dict[str, str]] = None
+    data_summary: Optional[Dict[str, Any]] = None
+    error: Optional[str] = None
+    raw_response: Optional[str] = None
+
+
+class ProfileInsightsResponse(BaseModel):
+    success: bool
+    profile_insights: Optional[str] = None
     data_summary: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
     raw_response: Optional[str] = None
@@ -104,14 +107,11 @@ class BookResponse(BaseModel):
     average_rating: Optional[float] = None
     genres: Optional[str] = None
     description: Optional[str] = None
-    cluster_id: Optional[int] = None
-    umap_x: Optional[float] = None
-    umap_y: Optional[float] = None
     date_read: Optional[str] = None  # Added for dashboard table
 
 
 class InsightsRequest(BaseModel):
-    prompt: str
+    pass
 
 
 # Health check endpoint
@@ -127,7 +127,6 @@ async def root():
                 "/docs",
                 "/upload",
                 "/enrich",
-                "/embed",
                 "/cluster",
                 "/insights",
                 "/recommend"
@@ -186,24 +185,7 @@ async def enrich_books(limit: Optional[int] = None):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# Embedding generation endpoint
-@app.post("/embed", response_model=EmbeddingResponse)
-async def generate_embeddings(limit: Optional[int] = None):
-    """Generate embeddings for all books."""
-    try:
-        stats = embedding_generator.embed_all_books(limit=limit)
-        
-        return EmbeddingResponse(
-            success=True,
-            total_books=stats['total_books'],
-            embedded=stats['embedded'],
-            skipped=stats['skipped'],
-            errors=stats['errors']
-        )
-    
-    except Exception as e:
-        logger.error(f"Error generating embeddings: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+
 
 
 # Clustering endpoint
@@ -237,9 +219,9 @@ async def cluster_books():
 # Insights endpoint
 @app.post("/insights", response_model=InsightsResponse)
 async def get_insights(request: InsightsRequest = Body(...)):
-    """Generate deep literary psychology insights with a custom prompt."""
+    """Generate deep literary psychology insights."""
     try:
-        result = insights_generator.generate_insights(prompt=request.prompt)
+        result = insights_generator.generate_insights()
         if result.get('success'):
             return InsightsResponse(
                 success=True,
@@ -255,6 +237,30 @@ async def get_insights(request: InsightsRequest = Body(...)):
             )
     except Exception as e:
         logger.error(f"Error generating insights: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Profile Insights endpoint
+@app.post("/profile-insights", response_model=ProfileInsightsResponse)
+async def get_profile_insights(request: InsightsRequest = Body(...)):
+    """Generate personal profile insights from reading data."""
+    try:
+        result = profile_insights_generator.generate_profile_insights()
+        if result.get('success'):
+            return ProfileInsightsResponse(
+                success=True,
+                profile_insights=result['profile_insights'],
+                data_summary=result['data_summary'],
+                raw_response=result.get('raw_response', None)
+            )
+        else:
+            return ProfileInsightsResponse(
+                success=False,
+                error=result.get('error', 'Unknown error'),
+                raw_response=result.get('raw_response', None)
+            )
+    except Exception as e:
+        logger.error(f"Error generating profile insights: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -300,15 +306,7 @@ async def get_enrichment_stats():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/stats/embedding")
-async def get_embedding_stats():
-    """Get embedding statistics."""
-    try:
-        stats = embedding_generator.get_embedding_stats()
-        return {"success": True, "stats": stats}
-    except Exception as e:
-        logger.error(f"Error getting embedding stats: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+
 
 
 @app.get("/stats/clustering")
@@ -333,6 +331,17 @@ async def get_insights_stats():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/stats/profile-insights")
+async def get_profile_insights_stats():
+    """Get profile insights generation statistics."""
+    try:
+        stats = profile_insights_generator.get_profile_insights_stats()
+        return {"success": True, "stats": stats}
+    except Exception as e:
+        logger.error(f"Error getting profile insights stats: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/stats/recommendations")
 async def get_recommendation_stats():
     """Get recommendation system statistics."""
@@ -341,6 +350,17 @@ async def get_recommendation_stats():
         return {"success": True, "stats": stats}
     except Exception as e:
         logger.error(f"Error getting recommendation stats: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/recommendations/preferences")
+async def analyze_reading_preferences():
+    """Analyze user's reading preferences using Gemini AI."""
+    try:
+        analysis = recommender.analyze_reading_preferences()
+        return {"success": True, "analysis": analysis}
+    except Exception as e:
+        logger.error(f"Error analyzing reading preferences: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -359,9 +379,6 @@ async def get_all_books():
                 average_rating=book.average_rating,
                 genres=book.genres,
                 description=book.description,
-                cluster_id=book.cluster_id,
-                umap_x=book.umap_x,
-                umap_y=book.umap_y,
                 date_read=book.date_read.strftime('%Y-%m-%d') if book.date_read else None  # Added
             )
             for book in books
@@ -385,9 +402,7 @@ async def get_books_by_cluster(cluster_id: int):
                     "title": book.title,
                     "author": book.author,
                     "rating": book.my_rating,
-                    "genres": book.genres,
-                    "umap_x": book.umap_x,
-                    "umap_y": book.umap_y
+                    "genres": book.genres
                 }
                 for book in books
             ]

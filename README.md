@@ -13,15 +13,16 @@ A local Streamlit + FastAPI application that provides **deep, non-deterministic 
 ### 📊 **Comprehensive Data Processing**
 - **Goodreads CSV ingestion**: Import your complete reading history
 - **Open Library enrichment**: Automatically adds descriptions, subjects, and genres
-- **OpenAI embeddings**: Generates semantic representations of each book
+
 - **K-means clustering**: Auto-selects optimal number of clusters (3-12)
 - **UMAP visualization**: 2D projection of your reading universe
 
-### 🎯 **Smart Recommendations**
-- **Hybrid scoring**: 60% cosine similarity + 30% rating + 10% randomness
-- **Explanatory tooltips**: Shows why each book was recommended
-- **Shared keyword analysis**: Identifies thematic connections
-- **Similar book discovery**: Find books like your favorites
+### 🎯 **AI-Powered Recommendations**
+- **Gemini AI engine**: Uses Google's Gemini model for intelligent recommendations
+- **Context-aware suggestions**: Analyzes your reading history and preferences
+- **Personalized explanations**: Each recommendation includes detailed reasoning
+- **Reading preferences analysis**: Deep insights into your literary tastes
+- **Similar book discovery**: Find books like your favorites using AI
 
 ### 📈 **Beautiful Visualizations**
 - **Reading timeline**: Track your literary journey over time
@@ -82,14 +83,14 @@ A local Streamlit + FastAPI application that provides **deep, non-deterministic 
 1. **Upload CSV**: Use the Streamlit interface to upload your Goodreads CSV
 2. **Ingest Data**: Click "Ingest Data" to parse and store your books
 3. **Enrich Metadata**: Click "Enrich Metadata" to add Open Library data
-4. **Generate Embeddings**: Click "Generate Embeddings" to create semantic representations
-5. **Cluster Books**: Click "Cluster Books" to group similar books
+4. **Generate Insights**: Click "Generate Insights" for deep literary psychology analysis
+5. **Get Recommendations**: Use the AI-powered recommendation system
 
 ### Step 3: Explore Insights
 1. **Dashboard**: View reading statistics and visualizations
-2. **Clusters**: Explore your books in 2D space and see cluster exemplars
-3. **Insights**: Generate deep literary psychology insights
-4. **Recommendations**: Get personalized book suggestions
+2. **Insights**: Generate deep literary psychology insights
+3. **Recommendations**: Get AI-powered personalized book suggestions
+4. **Reading Preferences**: Analyze your literary tastes and patterns
 
 ## 🧠 Deep Insights Examples
 
@@ -108,7 +109,7 @@ The system generates insights like:
 
 ### Backend (FastAPI)
 - **Database**: SQLite with SQLModel ORM
-- **Embeddings**: OpenAI text-embedding-3-small
+
 - **Clustering**: K-means with silhouette score optimization
 - **Dimensionality Reduction**: UMAP for 2D visualization
 - **LLM**: Google Gemini for insights generation
@@ -121,7 +122,7 @@ The system generates insights like:
 
 ### Data Flow
 ```
-Goodreads CSV → Ingestion → Enrichment → Embeddings → Clustering → Insights
+Goodreads CSV → Ingestion → Enrichment → Clustering → Insights
 ```
 
 ## 📊 API Endpoints
@@ -129,7 +130,7 @@ Goodreads CSV → Ingestion → Enrichment → Embeddings → Clustering → Ins
 ### Core Processing
 - `POST /upload` - Upload and ingest Goodreads CSV
 - `POST /enrich` - Enrich books with Open Library metadata
-- `POST /embed` - Generate OpenAI embeddings
+
 - `POST /cluster` - Perform K-means clustering
 
 ### Insights & Recommendations
@@ -140,7 +141,7 @@ Goodreads CSV → Ingestion → Enrichment → Embeddings → Clustering → Ins
 ### Statistics
 - `GET /stats/ingestion` - Ingestion statistics
 - `GET /stats/enrichment` - Enrichment statistics
-- `GET /stats/embedding` - Embedding statistics
+
 - `GET /stats/clustering` - Clustering statistics
 - `GET /stats/insights` - Insights generation statistics
 
@@ -202,7 +203,7 @@ LOG_LEVEL=INFO
 
 ### Benchmarks
 - **CSV Processing**: ~50 books/second
-- **Embedding Generation**: ~10 books/second (OpenAI rate limits)
+
 - **Clustering**: ~100 books/second
 - **Insights Generation**: ~2-3 seconds for 100 books
 
@@ -247,7 +248,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - **Goodreads**: For providing the data export functionality
 - **Open Library**: For rich book metadata
-- **OpenAI**: For powerful text embeddings
+
 - **Google Gemini**: For advanced language model capabilities
 - **Streamlit**: For the beautiful UI framework
 - **FastAPI**: For the robust API framework

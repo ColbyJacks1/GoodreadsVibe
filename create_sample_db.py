@@ -30,7 +30,7 @@ def create_sample_database():
             'subjects': 'American literature, Jazz Age, Social classes',
             'genres': 'Fiction, Classics, Romance',
             'language': 'en',
-            'embedding': json.dumps([0.1, 0.2, 0.3, 0.4, 0.5] * 100),  # 500-dim embedding
+    
             'cluster_id': 0,
             'centroid_distance': 0.15,
             'umap_x': -0.5,
@@ -56,7 +56,7 @@ def create_sample_database():
             'subjects': 'Science fiction, Desert planets, Political intrigue',
             'genres': 'Science Fiction, Fantasy, Adventure',
             'language': 'en',
-            'embedding': json.dumps([0.2, 0.3, 0.4, 0.5, 0.6] * 100),  # 500-dim embedding
+    
             'cluster_id': 1,
             'centroid_distance': 0.12,
             'umap_x': 0.8,
@@ -82,7 +82,7 @@ def create_sample_database():
             'subjects': 'Fantasy, Middle-earth, Adventure',
             'genres': 'Fantasy, Adventure, Classics',
             'language': 'en',
-            'embedding': json.dumps([0.3, 0.4, 0.5, 0.6, 0.7] * 100),  # 500-dim embedding
+    
             'cluster_id': 0,
             'centroid_distance': 0.18,
             'umap_x': -0.3,
@@ -108,7 +108,7 @@ def create_sample_database():
             'subjects': 'Human evolution, History, Anthropology',
             'genres': 'Non-fiction, History, Science',
             'language': 'en',
-            'embedding': json.dumps([0.4, 0.5, 0.6, 0.7, 0.8] * 100),  # 500-dim embedding
+    
             'cluster_id': 2,
             'centroid_distance': 0.22,
             'umap_x': 0.2,
@@ -134,7 +134,7 @@ def create_sample_database():
             'subjects': 'Space exploration, Survival, Science',
             'genres': 'Science Fiction, Adventure, Thriller',
             'language': 'en',
-            'embedding': json.dumps([0.5, 0.6, 0.7, 0.8, 0.9] * 100),  # 500-dim embedding
+    
             'cluster_id': 1,
             'centroid_distance': 0.14,
             'umap_x': 0.6,
@@ -169,7 +169,7 @@ def create_sample_database():
             subjects TEXT,
             genres TEXT,
             language TEXT,
-            embedding TEXT,
+        
             cluster_id INTEGER,
             centroid_distance REAL,
             umap_x REAL,
@@ -186,7 +186,7 @@ def create_sample_database():
                 book_id, title, author, isbn, isbn13, my_rating, average_rating,
                 publisher, pages, year_published, original_publication_year,
                 date_read, date_added, bookshelves, my_review, description,
-                subjects, genres, language, embedding, cluster_id, centroid_distance,
+                subjects, genres, language, cluster_id, centroid_distance,
                 umap_x, umap_y, created_at, updated_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
@@ -195,7 +195,7 @@ def create_sample_database():
             book['publisher'], book['pages'], book['year_published'],
             book['original_publication_year'], book['date_read'], book['date_added'],
             book['bookshelves'], book['my_review'], book['description'],
-            book['subjects'], book['genres'], book['language'], book['embedding'],
+            book['subjects'], book['genres'], book['language'],
             book['cluster_id'], book['centroid_distance'], book['umap_x'],
             book['umap_y'], datetime.now().isoformat(), datetime.now().isoformat()
         ))
@@ -205,7 +205,7 @@ def create_sample_database():
     conn.close()
     
     print("✅ Sample database created successfully!")
-    print("📊 Added 5 sample books with embeddings and clustering data")
+    print("📊 Added 5 sample books with clustering data")
     print("🗄️  Database file: embed_data.sqlite")
     print("\nSample books:")
     for book in sample_books:
