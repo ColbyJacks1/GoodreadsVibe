@@ -61,6 +61,24 @@ A local Streamlit application that provides **deep, non-deterministic literary p
 5. **Open your browser**
    - Streamlit UI: http://localhost:8501
 
+## 🌐 Deploy Online
+
+Want to share your Goodreads Analyzer with others? Deploy it online!
+
+### **Recommended: Streamlit Cloud**
+1. Push your code to GitHub
+2. Go to [share.streamlit.io](https://share.streamlit.io)
+3. Connect your repository
+4. Set your `GOOGLE_GEMINI_API_KEY` environment variable
+5. Deploy! 🚀
+
+### **Other Options**
+- **Railway**: Simple git-based deployment
+- **Heroku**: Traditional cloud hosting
+- **Vercel**: Modern deployment platform
+
+📖 **Full deployment guide**: See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed instructions.
+
 ## 📋 Usage Guide
 
 ### Step 1: Export Your Goodreads Data
