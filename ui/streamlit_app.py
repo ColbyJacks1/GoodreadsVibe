@@ -1278,28 +1278,7 @@ def show_smart_recommendations_page():
         st.info("Go to the '📤 Upload' page to import your reading history.")
         return
     
-    # Recommendation interface
-    st.subheader("💭 What are you looking for?")
-    
-    # Example queries for inspiration
-    example_queries = [
-        "I want a psychological thriller with an unreliable narrator",
-        "Recommend books similar to my highest-rated reads",
-        "I'm in the mood for something uplifting and feel-good",
-        "Show me books that challenge my usual reading patterns",
-        "I want to explore a new genre outside my comfort zone"
-    ]
-    
-    # Show example queries as clickable chips
-    st.markdown("**💡 Try these examples:**")
-    cols = st.columns(len(example_queries))
-    for i, example in enumerate(example_queries):
-        with cols[i]:
-            if st.button(example, key=f"example_{i}", use_container_width=True):
-                st.session_state.recommendation_query = example
-                st.rerun()
-    
-    # Main query input
+    # Main query input - moved to top
     query = st.text_input(
         "Describe what you're looking for:",
         value=st.session_state.get("recommendation_query", ""),
@@ -1308,21 +1287,27 @@ def show_smart_recommendations_page():
     )
     
     # Configuration options
-    col1, col2 = st.columns(2)
-    with col1:
-        limit = st.slider("Number of recommendations", 3, 15, 8)
-    with col2:
-        if st.button("🎲 Random Inspiration", help="Get a random recommendation prompt"):
-            import random
-            random_queries = [
-                "Recommend something completely different from my usual reads",
-                "I want a book that will make me think differently about the world",
-                "Show me books that are critically acclaimed but not widely known",
-                "I'm looking for a book that combines multiple genres I enjoy",
-                "Recommend books that are similar to my highest-rated books"
-            ]
-            st.session_state.recommendation_query = random.choice(random_queries)
-            st.rerun()
+    limit = st.slider("Number of recommendations", 3, 10, 4)
+    
+    # Example queries for inspiration
+    example_queries = [
+        "**I want a psychological thriller with an unreliable narrator**",
+        "**Recommend books similar to my highest-rated reads**",
+        "**I'm in the mood for something uplifting and feel-good**",
+        "**Show me books that challenge my usual reading patterns**",
+        "**I want to explore a new genre outside my comfort zone**"
+    ]
+    
+    # Show example queries as clickable chips
+    st.markdown("**💡 Try these examples:**")
+    cols = st.columns(len(example_queries))
+    for i, example in enumerate(example_queries):
+        with cols[i]:
+            if st.button(example, key=f"example_{i}", use_container_width=True):
+                # Remove markdown formatting when setting the query
+                clean_query = example.replace("**", "")
+                st.session_state.recommendation_query = clean_query
+                st.rerun()
     
     # Generate recommendations
     if st.button("🔍 Get AI Recommendations", type="primary", use_container_width=True) and query:
