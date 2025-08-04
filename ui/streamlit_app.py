@@ -28,6 +28,14 @@ except ImportError as e:
     print(f"❌ Failed to import comprehensive_analyzer: {e}")
     comprehensive_analyzer = None
 
+# Import LLM recommender with error handling for Streamlit Cloud
+try:
+    from app.llm_recommendations import llm_recommender
+    print("✅ Successfully imported llm_recommender")
+except ImportError as e:
+    print(f"❌ Failed to import llm_recommender: {e}")
+    llm_recommender = None
+
 
 def sqlmodel_to_dict(obj):
     """Convert SQLModel object to dictionary to avoid Pydantic compatibility issues."""
@@ -39,7 +47,7 @@ def sqlmodel_to_dict(obj):
 def show_quick_navigation():
     """Show quick navigation buttons at the bottom of pages."""
     st.markdown("---")
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     
     with col1:
         if st.button("📤 Upload",
@@ -66,6 +74,13 @@ def show_quick_navigation():
                 if key in ['user_books', 'user_stats', 'selected_page']:
                     continue  # Keep essential state
             st.session_state.selected_page = "🔮 Analyze Me"
+            st.rerun()
+    
+    with col4:
+        if st.button("🎯 Smart Recs",
+                    help="Get AI-powered personalized recommendations",
+                    use_container_width=True):
+            st.session_state.selected_page = "🎯 Smart Recommendations"
             st.rerun()
 
 
@@ -131,7 +146,8 @@ def main():
     main_pages = [
         "📤 Upload", 
         "📊 Books and Stats", 
-        "🔮 Analyze Me"
+        "🔮 Analyze Me",
+        "🎯 Smart Recommendations"
     ]
     
     # Check if page was selected via main buttons
@@ -171,6 +187,8 @@ def main():
         show_books_and_stats_page()
     elif page_clean == "Analyze Me":
         show_comprehensive_analysis_page_parallel()
+    elif page_clean == "Smart Recommendations":
+        show_smart_recommendations_page()
 
 def show_upload_page():
     st.header("📤 Upload & Process")
@@ -1002,9 +1020,7 @@ def show_comprehensive_analysis_page_parallel():
                                 st.stop()
                         else:
                             quick_result = comprehensive_analyzer.generate_quick_analysis()
-                        st.write(f"Debug - Quick analysis result success: {quick_result.get('success', False)}")
-                        st.write(f"Debug - Quick analysis sections: {list(quick_result.get('parsed_sections', {}).keys())}")
-                        st.write(f"Debug - Quick analysis sections lengths: { {k: len(v) for k, v in quick_result.get('parsed_sections', {}).items()} }")
+                        
                         if quick_result.get("success"):
                             st.session_state.quick_analysis_sections = quick_result.get("parsed_sections", {})
                             st.session_state.quick_analysis_completed = True
@@ -1247,6 +1263,94 @@ def show_comprehensive_analysis_page_parallel():
     # Quick navigation at bottom
     show_quick_navigation()
 
+
+def show_smart_recommendations_page():
+    """Show the LLM-powered recommendations page."""
+    st.header("🎯 Smart Recommendations")
+    st.markdown("Get personalized book recommendations powered by AI analysis of your reading history.")
+    
+    # Get user data
+    user_books = session_db_manager.get_user_books()
+    user_stats = st.session_state.user_stats
+    
+    if not user_books:
+        st.warning("📚 **No books found!** Please upload your Goodreads data first.")
+        st.info("Go to the '📤 Upload' page to import your reading history.")
+        return
+    
+    # Recommendation interface
+    st.subheader("💭 What are you looking for?")
+    
+    # Example queries for inspiration
+    example_queries = [
+        "I want a psychological thriller with an unreliable narrator",
+        "Recommend books similar to my highest-rated reads",
+        "I'm in the mood for something uplifting and feel-good",
+        "Show me books that challenge my usual reading patterns",
+        "I want to explore a new genre outside my comfort zone"
+    ]
+    
+    # Show example queries as clickable chips
+    st.markdown("**💡 Try these examples:**")
+    cols = st.columns(len(example_queries))
+    for i, example in enumerate(example_queries):
+        with cols[i]:
+            if st.button(example, key=f"example_{i}", use_container_width=True):
+                st.session_state.recommendation_query = example
+                st.rerun()
+    
+    # Main query input
+    query = st.text_input(
+        "Describe what you're looking for:",
+        value=st.session_state.get("recommendation_query", ""),
+        placeholder="e.g., 'I want a book about time travel with strong female characters' or 'Recommend something similar to my favorite sci-fi books'",
+        help="Be specific about what you want - genre, themes, mood, or compare to books you've enjoyed"
+    )
+    
+    # Configuration options
+    col1, col2 = st.columns(2)
+    with col1:
+        limit = st.slider("Number of recommendations", 3, 15, 8)
+    with col2:
+        if st.button("🎲 Random Inspiration", help="Get a random recommendation prompt"):
+            import random
+            random_queries = [
+                "Recommend something completely different from my usual reads",
+                "I want a book that will make me think differently about the world",
+                "Show me books that are critically acclaimed but not widely known",
+                "I'm looking for a book that combines multiple genres I enjoy",
+                "Recommend books that are similar to my highest-rated books"
+            ]
+            st.session_state.recommendation_query = random.choice(random_queries)
+            st.rerun()
+    
+    # Generate recommendations
+    if st.button("🔍 Get AI Recommendations", type="primary", use_container_width=True) and query:
+        st.info("⏱️ **AI processing may take up to 2 minutes** - please be patient!")
+        
+        with st.spinner("🤖 Analyzing your reading history and generating personalized recommendations..."):
+            try:
+                if llm_recommender:
+                    # Use LLM-powered recommendations
+                    result = llm_recommender.generate_recommendations(query, limit)
+                    
+                    if result.get("success"):
+                        st.success(f"✨ Generated {limit} personalized recommendations for: '{query}'")
+                        st.markdown("---")
+                        st.markdown(result["recommendations"])
+                    else:
+                        st.error(f"Failed to generate recommendations: {result.get('error', 'Unknown error')}")
+                else:
+                    # Fallback to simple recommendations
+                    st.warning("⚠️ LLM recommendations unavailable. Using simple recommendations.")
+                    recommendations = generate_simple_recommendations(user_books, user_stats, query, limit)
+                    st.markdown(recommendations)
+                    
+            except Exception as e:
+                st.error(f"Failed to generate recommendations: {str(e)}")
+    
+    # Quick navigation at bottom
+    show_quick_navigation()
 
 
 def show_recommendations_page():

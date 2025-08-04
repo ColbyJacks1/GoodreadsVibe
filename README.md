@@ -15,10 +15,12 @@ A local Streamlit application that provides **deep, non-deterministic literary p
 - **Simple data management**: SQLite database with clean data models
 
 ### 🎯 **AI-Powered Recommendations**
+- **Smart Recommendations**: New LLM-powered recommendation page with user prompts
 - **Gemini AI engine**: Uses Google's Gemini model for intelligent recommendations
 - **Context-aware suggestions**: Analyzes your reading history and preferences
 - **Personalized explanations**: Each recommendation includes detailed reasoning
 - **Reading preferences analysis**: Deep insights into your literary tastes
+- **Interactive prompts**: Users can ask for specific types of books or recommendations
 
 ### 📈 **Beautiful Visualizations**
 - **Reading timeline**: Track your literary journey over time
@@ -95,6 +97,7 @@ Want to share your Goodreads Analyzer with others? Deploy it online!
    - **Profile Analysis**: Reading personality profile
    - **Insights**: Targeted psychological analysis
 5. **Get Recommendations**: Use the AI-powered recommendation system
+6. **Smart Recommendations**: Try the new LLM-powered recommendation page with interactive prompts
 
 ### Step 3: Explore Insights
 1. **Dashboard**: View reading statistics and visualizations
@@ -102,6 +105,7 @@ Want to share your Goodreads Analyzer with others? Deploy it online!
 3. **Profile Analysis**: Analyze your reading personality
 4. **Insights**: Get targeted psychological analysis
 5. **Recommendations**: Get AI-powered personalized book suggestions
+6. **Smart Recommendations**: Ask for specific types of books using natural language prompts
 
 ## 🧠 Deep Insights Examples
 
