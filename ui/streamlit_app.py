@@ -1311,8 +1311,6 @@ def show_smart_recommendations_page():
     
     # Generate recommendations
     if st.button("🔍 Get AI Recommendations", type="primary", use_container_width=True) and query:
-        st.info("⏱️ **AI processing may take up to 2 minutes** - please be patient!")
-        
         with st.spinner("🤖 Analyzing your reading history and generating personalized recommendations..."):
             try:
                 if llm_recommender:
