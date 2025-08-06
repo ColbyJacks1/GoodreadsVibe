@@ -39,6 +39,28 @@ class LLMRecommender:
         with open(prompt_path, 'r') as f:
             self.prompt_template = f.read()
     
+    def _convert_session_books_to_objects(self, session_books: List[Dict[str, Any]]) -> List[Any]:
+        """Convert session book dictionaries to objects with expected attributes."""
+        class BookObject:
+            def __init__(self, book_dict: Dict[str, Any]):
+                self.book_id = book_dict.get('book_id', '')
+                self.title = book_dict.get('title', 'Unknown Title')
+                self.author = book_dict.get('author', 'Unknown Author')
+                self.my_rating = book_dict.get('my_rating')
+                self.average_rating = book_dict.get('average_rating')
+                self.date_read = book_dict.get('date_read')
+                self.date_added = book_dict.get('date_added')
+                self.bookshelves = book_dict.get('bookshelves')
+                self.my_review = book_dict.get('my_review')
+                self.genres = book_dict.get('genres')
+                self.publisher = book_dict.get('publisher')
+                self.pages = book_dict.get('pages')
+                self.year_published = book_dict.get('year_published')
+                self.isbn = book_dict.get('isbn')
+                self.isbn13 = book_dict.get('isbn13')
+        
+        return [BookObject(book) for book in session_books]
+    
     def _format_books(self, books: List[Any]) -> str:
         """Format user's books for LLM context."""
         if not books:
@@ -67,7 +89,7 @@ class LLMRecommender:
         
         return "\n".join(book_lines)
 
-    def generate_recommendations(self, query: str, limit: int = 10) -> Dict[str, Any]:
+    def generate_recommendations(self, query: str, limit: int = 10, session_books: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
         """Generate personalized book recommendations using Gemini AI."""
         try:
             if not self.model:
@@ -98,12 +120,12 @@ class LLMRecommender:
 ### 5. The Invisible Life of Addie LaRue by V.E. Schwab
 **Why this book:** Offers a unique blend of historical fiction and fantasy with a strong female protagonist.
 **Connection to your reading:** Matches your appreciation for well-crafted stories with memorable characters.
-**Themes:** Immortality, love, art, memory, identity"""
+**Themes:** Immortality, love, art, memory, historical fantasy"""
                 
                 # Log the test response
                 usage_logger.log_ai_response(
-                    analysis_type="llm_recommendations_test",
-                    prompt=f"Test recommendation query: {query}",
+                    analysis_type="recommendations_test",
+                    prompt="Test prompt",
                     response=test_response,
                     book_count=0,
                     processing_time=0.0
@@ -111,18 +133,21 @@ class LLMRecommender:
                 
                 return {
                     "success": True,
-                    "recommendations": test_response,
-                    "query": query,
-                    "limit": limit
+                    "recommendations": test_response
                 }
             
-            books = self.db.get_all_books()
+            # Use session books if provided, otherwise fallback to database
+            if session_books is not None:
+                books = self._convert_session_books_to_objects(session_books)
+            else:
+                books = self.db.get_all_books()
+            
             if not books:
                 return {"error": "No books found"}
             
             books_text = self._format_books(books)
             
-            # Format prompt
+            # Format prompt with user query and books
             prompt = self.prompt_template.format(
                 query=query,
                 books=books_text,
@@ -141,7 +166,7 @@ class LLMRecommender:
             if not response.text:
                 error_msg = "No response from LLM"
                 usage_logger.log_ai_response(
-                    analysis_type="llm_recommendations",
+                    analysis_type="recommendations",
                     prompt=prompt,
                     response="",
                     book_count=len(books),
@@ -152,7 +177,7 @@ class LLMRecommender:
             
             # Log the AI response
             usage_logger.log_ai_response(
-                analysis_type="llm_recommendations",
+                analysis_type="recommendations",
                 prompt=prompt,
                 response=response.text,
                 book_count=len(books),
@@ -161,14 +186,12 @@ class LLMRecommender:
             
             return {
                 "success": True,
-                "recommendations": response.text,
-                "query": query,
-                "limit": limit
+                "recommendations": response.text
             }
         
         except Exception as e:
             logger.error(f"Error generating recommendations: {str(e)}")
-            usage_logger.log_error("llm_recommendations", str(e))
+            usage_logger.log_error("recommendations", str(e))
             return {"error": str(e)}
 
 

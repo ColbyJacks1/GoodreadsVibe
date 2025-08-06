@@ -1019,7 +1019,7 @@ def show_comprehensive_analysis_page_parallel():
                                 st.error(f"❌ Failed to reload module: {reload_error}")
                                 st.stop()
                         else:
-                            quick_result = comprehensive_analyzer.generate_quick_analysis()
+                            quick_result = comprehensive_analyzer.generate_quick_analysis(session_books=user_books)
                         
                         if quick_result.get("success"):
                             st.session_state.quick_analysis_sections = quick_result.get("parsed_sections", {})
@@ -1103,7 +1103,7 @@ def show_comprehensive_analysis_page_parallel():
                             st.error("❌ Comprehensive analyzer not available for parallel analysis. Import failed.")
                             st.stop()
                             
-                        comprehensive_result = comprehensive_analyzer.generate_comprehensive_analysis_parallel()
+                        comprehensive_result = comprehensive_analyzer.generate_comprehensive_analysis_parallel(session_books=user_books)
                         if comprehensive_result.get("success"):
                             st.session_state.comprehensive_analysis_sections_parallel = comprehensive_result.get("parsed_sections", {})
                             # Store raw response for debugging
@@ -1315,7 +1315,7 @@ def show_smart_recommendations_page():
             try:
                 if llm_recommender:
                     # Use LLM-powered recommendations
-                    result = llm_recommender.generate_recommendations(query, limit)
+                    result = llm_recommender.generate_recommendations(query, limit, session_books=user_books)
                     
                     if result.get("success"):
                         st.success(f"✨ Generated {limit} personalized recommendations for: '{query}'")

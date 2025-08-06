@@ -40,6 +40,28 @@ class ComprehensiveAnalyzer:
         with open(prompt_path, 'r') as f:
             self.prompt_template = f.read()
     
+    def _convert_session_books_to_objects(self, session_books: List[Dict[str, Any]]) -> List[Any]:
+        """Convert session book dictionaries to objects with expected attributes."""
+        class BookObject:
+            def __init__(self, book_dict: Dict[str, Any]):
+                self.book_id = book_dict.get('book_id', '')
+                self.title = book_dict.get('title', 'Unknown Title')
+                self.author = book_dict.get('author', 'Unknown Author')
+                self.my_rating = book_dict.get('my_rating')
+                self.average_rating = book_dict.get('average_rating')
+                self.date_read = book_dict.get('date_read')
+                self.date_added = book_dict.get('date_added')
+                self.bookshelves = book_dict.get('bookshelves')
+                self.my_review = book_dict.get('my_review')
+                self.genres = book_dict.get('genres')
+                self.publisher = book_dict.get('publisher')
+                self.pages = book_dict.get('pages')
+                self.year_published = book_dict.get('year_published')
+                self.isbn = book_dict.get('isbn')
+                self.isbn13 = book_dict.get('isbn13')
+        
+        return [BookObject(book) for book in session_books]
+    
     def _format_books(self, books: List[Any]) -> str:
         """Format user's books for LLM context."""
         if not books:
@@ -68,9 +90,7 @@ class ComprehensiveAnalyzer:
         
         return "\n".join(book_lines)
 
-
-
-    def generate_quick_analysis(self) -> Dict[str, Any]:
+    def generate_quick_analysis(self, session_books: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
         """Generate quick analysis (roast + recommendations) for immediate display."""
         try:
             if not self.model:
@@ -136,7 +156,12 @@ You should explore more non-fiction and historical fiction to balance your readi
                     "raw_response": test_response
                 }
             
-            books = self.db.get_all_books()
+            # Use session books if provided, otherwise fallback to database
+            if session_books is not None:
+                books = self._convert_session_books_to_objects(session_books)
+            else:
+                books = self.db.get_all_books()
+            
             if not books:
                 return {"error": "No books found"}
             
@@ -194,7 +219,7 @@ You should explore more non-fiction and historical fiction to balance your readi
             usage_logger.log_error("quick_analysis", str(e))
             return {"error": str(e)}
 
-    def generate_comprehensive_analysis_parallel(self) -> Dict[str, Any]:
+    def generate_comprehensive_analysis_parallel(self, session_books: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
         """Generate comprehensive analysis (insights + profile) for secondary display."""
         try:
             if not self.model:
@@ -284,7 +309,12 @@ You prefer books that challenge your thinking and expand your worldview. You're 
                     "raw_response": test_response
                 }
             
-            books = self.db.get_all_books()
+            # Use session books if provided, otherwise fallback to database
+            if session_books is not None:
+                books = self._convert_session_books_to_objects(session_books)
+            else:
+                books = self.db.get_all_books()
+            
             if not books:
                 return {"error": "No books found"}
             
@@ -470,9 +500,13 @@ You prefer books that challenge your thinking and expand your worldview. You're 
         
         return sections
     
-    def get_analysis_stats(self) -> Dict[str, Any]:
+    def get_analysis_stats(self, session_books: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
         """Get statistics about the comprehensive analysis capability."""
-        books = self.db.get_all_books()
+        # Use session books if provided, otherwise fallback to database
+        if session_books is not None:
+            books = self._convert_session_books_to_objects(session_books)
+        else:
+            books = self.db.get_all_books()
         
         if not books:
             return {
