@@ -75,7 +75,17 @@ class LLMRecommender:
         for book in sorted_books:
             rating = book.my_rating or "No rating"
             date = book.date_read or book.date_added
-            date_str = date.strftime("%Y-%m-%d") if date else "Unknown date"
+            
+            # Handle date formatting - could be string or datetime object
+            if date:
+                if hasattr(date, 'strftime'):
+                    # It's a datetime object
+                    date_str = date.strftime("%Y-%m-%d")
+                else:
+                    # It's a string, use as-is
+                    date_str = str(date)
+            else:
+                date_str = "Unknown date"
             
             line = f"- {book.title} by {book.author} (Rating: {rating}, Read: {date_str})"
             
