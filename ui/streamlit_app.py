@@ -1011,7 +1011,7 @@ def show_comprehensive_analysis_page_parallel():
                                 
                                 if hasattr(reloaded_analyzer, 'generate_quick_analysis'):
                                     st.success("✅ Successfully reloaded module with correct methods!")
-                                    quick_result = reloaded_analyzer.generate_quick_analysis()
+                                    quick_result = reloaded_analyzer.generate_quick_analysis(session_books=user_books)
                                 else:
                                     st.error(f"❌ Even after reload, method not found. Methods: {[method for method in dir(reloaded_analyzer) if not method.startswith('_')]}")
                                     st.stop()
